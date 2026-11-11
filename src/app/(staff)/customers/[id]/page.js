@@ -13,7 +13,7 @@ import {
   MapPinIcon,
   PencilIcon,
   PhoneIcon,
-  ReceiptIcon,
+  ReceiptTextIcon,
   StickyNoteIcon,
   UserIcon,
 } from "lucide-react";
@@ -328,7 +328,7 @@ async function CustomerContent({ params }) {
                 <Empty className="py-12">
                   <EmptyHeader>
                     <EmptyMedia variant="icon">
-                      <ReceiptIcon />
+                      <ReceiptTextIcon />
                     </EmptyMedia>
                     <EmptyTitle>{canSeePlans ? "No plans yet" : "Plans are hidden"}</EmptyTitle>
                     <EmptyDescription>

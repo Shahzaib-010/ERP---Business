@@ -261,3 +261,29 @@ the logo mark, "in stock" dots, text selection and the landing page's dark secti
   corrected on the plan.
 - Receipt numbers are one series shared by plan payments and cash bike sales.
 - Bike photos: optional; the upload arrives with private file storage (Phase 6).
+
+## D-014 — Phase 5 cash book and business figures — Decided (2026-11-11)
+
+- **One ledger, no copies.** The cash book is assembled from where each payment already
+  lives: installment advances and payments (`payments`), cash bike sales (`bikes.sale`),
+  payments to sellers (`sellerPayments`). Only entries that exist nowhere else are stored
+  in `financialTransactions`: **expense, other income, owner investment, owner withdrawal**.
+  This replaces "every payment also writes a financialTransactions row" in doc 03, which
+  would store each payment twice. Settlement discounts are not cash and never appear.
+- Manual entries are voided with a reason (`transactions.edit`), never edited or deleted.
+- **Expense categories** (defaults, owner may change): rent, salaries, utilities, fuel &
+  transport, repairs, parts & accessories, registration & documents, marketing, taxes &
+  government fees, office & tea, other. **Income categories**: commission, service &
+  repairs, document & file fees, other.
+- **Figures** (dashboard, needs `dashboard.view`):
+  - Sales are counted when the sale is made: a cash bike sale's price, or a plan's total
+    price on its agreement date. Later installments are cash received, not new sales.
+  - Cash received / paid / net for the chosen period (this month, 3 months, 12 months,
+    this year), each compared with the equally long period before it.
+  - Position: cash in hand (all recorded cash in minus out), receivables (active plan
+    balances, with how late they are: on time, 1–30, 31–60, over 60 days), owed to sellers,
+    stock value at purchase price.
+  - Cash in hand only counts what is recorded in the system; an opening balance can be
+    entered as an owner investment.
+- Charts follow the dataviz guidance: validated colour-blind-safe palette (light and dark
+  steps), one axis, legends, hover tooltips and a table view for every chart.

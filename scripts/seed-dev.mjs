@@ -18,6 +18,9 @@ import { InstallmentPlan } from "@/server/models/InstallmentPlan";
 import { applyDiscount, createPlan, recordPayment } from "@/server/services/installments";
 import { Bike } from "@/server/models/Bike";
 import { createBikePurchase, sellBikeForCash } from "@/server/services/bikes";
+import { FinancialTransaction } from "@/server/models/FinancialTransaction";
+import { createTransaction } from "@/server/services/cashbook";
+import { todayPk } from "@/lib/business-date";
 
 // Dummy bikes: some in stock, one still owed to the seller, one sold for cash, one sold on
 // installments. Engine numbers start with "DEMO" so they are easy to spot and remove later.
@@ -174,6 +177,38 @@ async function main() {
     bikesAdded += 1;
   }
   console.log(`Dummy bikes: ${bikesAdded} added.`);
+
+  // Dummy cash book: monthly running costs for the last 8 months, owner money, other income.
+  // Voucher numbers start with "DEMO" so they are easy to spot and remove later.
+  let entriesAdded = 0;
+  if (!(await FinancialTransaction.exists({ voucherNumber: /^DEMO/ }))) {
+    const now = todayPk();
+    const ym = (back) => {
+      const d = new Date(Date.UTC(Number(now.slice(0, 4)), Number(now.slice(5, 7)) - 1 - back, 1));
+      return d.toISOString().slice(0, 7);
+    };
+    const day = (back, d) => {
+      const s = `${ym(back)}-${String(d).padStart(2, "0")}`;
+      return s > now ? now : s;
+    };
+    const entries = [{ type: "owner_investment", amount: "1500000", occurredAt: day(8, 1), description: "Starting capital", voucherNumber: "DEMO-0" }];
+    for (let back = 7; back >= 0; back--) {
+      entries.push(
+        { type: "expense", category: "rent", amount: "45000", occurredAt: day(back, 1), description: "Shop rent", voucherNumber: `DEMO-R${back}` },
+        { type: "expense", category: "salaries", amount: String(60000 + (back % 3) * 5000), occurredAt: day(back, 3), description: "Staff salaries", voucherNumber: `DEMO-S${back}` },
+        { type: "expense", category: "utilities", amount: String(9000 + (back % 4) * 1500), occurredAt: day(back, 8), description: "Electricity bill", voucherNumber: `DEMO-U${back}` },
+        { type: "expense", category: "office", amount: String(4000 + (back % 2) * 2500), occurredAt: day(back, 15), description: "Tea and office supplies", voucherNumber: `DEMO-O${back}` },
+        { type: "other_income", category: "documents", amount: String(6000 + (back % 3) * 4000), occurredAt: day(back, 20), description: "File and registration fees", voucherNumber: `DEMO-I${back}` },
+      );
+      if (back % 3 === 1) entries.push({ type: "expense", category: "marketing", amount: "12000", occurredAt: day(back, 12), description: "Banners and adverts", voucherNumber: `DEMO-M${back}` });
+      if (back % 4 === 2) entries.push({ type: "owner_withdrawal", amount: "50000", occurredAt: day(back, 25), description: "Owner drawing", voucherNumber: `DEMO-W${back}` });
+    }
+    for (const e of entries) {
+      await createTransaction(actor, e);
+      entriesAdded += 1;
+    }
+  }
+  console.log(`Dummy cash book entries: ${entriesAdded} added.`);
 
   const demo = await Customer.findOne({ cnicNormalized: "1111111111111" }).select("_id").lean();
   await setCustomerPortalPassword(actor, String(demo._id), { password: "demo-pass-123" });

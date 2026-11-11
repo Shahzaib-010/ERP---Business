@@ -92,9 +92,24 @@
   --sidebar-accent-foreground: oklch(0.27 0.07 264);
   --sidebar-border: oklch(0.92 0.006 264);
   --sidebar-ring: oklch(0.55 0.11 264);
+
+  /* Chart colours: validated categorical slots (dataviz reference palette) and the fixed
+     status palette. Light and dark steps are chosen separately, not flipped. */
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-3: #1baf7a;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+  --viz-grid: oklch(0.93 0.005 264);
 }
 
 .dark {
+  --viz-1: #3987e5;
+  --viz-2: #d95926;
+  --viz-3: #199e70;
+  --viz-grid: oklch(1 0 0 / 8%);
   --background: oklch(0.16 0.012 264);
   --foreground: oklch(0.96 0.005 264);
   --card: oklch(0.2 0.014 264);

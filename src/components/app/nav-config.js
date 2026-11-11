@@ -1,5 +1,6 @@
 import {
   BikeIcon,
+  BookOpenIcon,
   FileTextIcon,
   LayoutDashboardIcon,
   SearchIcon,
@@ -31,6 +32,10 @@ export const NAV_GROUPS = [
     ],
   },
   {
+    label: "Money",
+    items: [{ href: "/cashbook", label: "Cash book", icon: BookOpenIcon, permission: "transactions.view" }],
+  },
+  {
     label: "Administration",
     items: [{ href: "/users", label: "Staff accounts", icon: ShieldCheckIcon, permission: "users.manage" }],
   },
@@ -44,6 +49,7 @@ export const SEGMENT_LABELS = {
   customers: "Customers",
   plans: "Installment plans",
   bikes: "Bikes",
+  cashbook: "Cash book",
   users: "Staff accounts",
   account: "My account",
   search: "Search",

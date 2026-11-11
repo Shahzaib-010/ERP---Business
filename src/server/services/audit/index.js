@@ -101,7 +101,7 @@ async function withActorNames(rows) {
     actorName: r.actorKind === "system" ? "System" : (names.get(String(r.actorId)) ?? "Unknown"),
     createdAt: r.createdAt,
     changes: diffSnapshots(r.before, r.after),
-    entityName: r.after?.name ?? r.before?.name ?? planLabels.get(String(r.entityId)) ?? null,
+    entityName: r.after?.name ?? r.before?.name ?? planLabels.get(String(r.entityId)) ?? r.after?.description ?? r.before?.description ?? null,
     reason: r.reason ?? null,
   }));
 }

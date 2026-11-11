@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { BadgePercentIcon, Ban, CalendarCogIcon, MoreHorizontalIcon, PencilIcon, ReceiptIcon } from "lucide-react";
+import { BadgePercentIcon, Ban, CalendarCogIcon, MoreHorizontalIcon, PencilIcon, ReceiptTextIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -123,7 +123,7 @@ function PaymentForm({ action, balance, suggested, nextReceipt, minDate, onDone 
             Cancel
           </Button>
         </DialogClose>
-        <SubmitButton icon={ReceiptIcon}>Save payment</SubmitButton>
+        <SubmitButton icon={ReceiptTextIcon}>Save payment</SubmitButton>
       </DialogFooter>
     </form>
   );
@@ -308,7 +308,7 @@ export function PlanActions({ planId, active, balance, suggested, nextReceipt, m
           minDate={minDate}
           trigger={
             <Button>
-              <ReceiptIcon /> Record payment
+              <ReceiptTextIcon /> Record payment
             </Button>
           }
         />

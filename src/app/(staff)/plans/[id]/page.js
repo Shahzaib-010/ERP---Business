@@ -9,7 +9,7 @@ import {
   FileSignatureIcon,
   HistoryIcon,
   PhoneIcon,
-  ReceiptIcon,
+  ReceiptTextIcon,
   UserIcon,
   UserRoundCheckIcon,
 } from "lucide-react";
@@ -195,7 +195,7 @@ async function PlanContent({ params }) {
       <Tabs defaultValue="payments" className="gap-4">
         <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
           <TabsTrigger value="payments">
-            <ReceiptIcon /> Payments
+            <ReceiptTextIcon /> Payments
           </TabsTrigger>
           <TabsTrigger value="schedule">
             <CalendarClockIcon /> Schedule
@@ -217,7 +217,7 @@ async function PlanContent({ params }) {
               <Empty className="py-12">
                 <EmptyHeader>
                   <EmptyMedia variant="icon">
-                    <ReceiptIcon />
+                    <ReceiptTextIcon />
                   </EmptyMedia>
                   <EmptyTitle>No payments yet</EmptyTitle>
                   <EmptyDescription>Payments you record will appear here with the running balance.</EmptyDescription>

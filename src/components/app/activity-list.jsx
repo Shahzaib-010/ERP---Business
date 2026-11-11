@@ -27,6 +27,7 @@ function entityHref(e) {
   if (e.entityType === "customer" && e.entityId) return `/customers/${e.entityId}`;
   if (e.entityType === "installmentPlan" && e.entityId) return `/plans/${e.entityId}`;
   if (e.entityType === "bike" && e.entityId) return `/bikes/${e.entityId}`;
+  if (e.entityType === "financialTransaction") return "/cashbook";
   return null;
 }
 
