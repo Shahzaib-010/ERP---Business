@@ -287,3 +287,20 @@ the logo mark, "in stock" dots, text selection and the landing page's dark secti
     entered as an owner investment.
 - Charts follow the dataviz guidance: validated colour-blind-safe palette (light and dark
   steps), one axis, legends, hover tooltips and a table view for every chart.
+
+## D-015 — Dashboards per business — Decided (2026-11-12)
+
+- **Dashboard → Overview** (combined, needs `dashboard.view`): cash in hand with a
+  12-month cash-position chart; money owed (customers owe you vs you owe sellers);
+  sales, installments collected, bikes sold and new customers, each with a 12-month
+  sparkline and the change versus the previous period; one summary card per business;
+  cash flow, sales and money in/out breakdowns; late plans; recent activity.
+- **Dashboard → Installments** (needs `installments.view`): owed by customers, on-time
+  rate, overdue, due in the next 30 days, collected; expected vs collected per month
+  (expected comes from each plan's own schedule); balances by item type; reminder list
+  (due in 30 days), late plans, new plans per month, largest balances.
+- **Dashboard → Showroom** (needs `bikes.view`): stock count and value, new vs used,
+  owed to sellers, spent buying, average days from purchase to sale; bought vs sold and
+  bike sales value per month; stock by make and by age; oldest stock, sellers still owed,
+  recent sales.
+- Tabs and figures appear only for modules the person may see.

@@ -112,6 +112,14 @@ export async function getFinanceOverview(actor, period = "month") {
     ]),
     monthly(InstallmentPlan, { status: { $ne: "cancelled" }, ...trendMatch("terms.agreementDate") }, "terms.agreementDate", "$terms.agreedTotal"),
   ]);
+  // Counts per month: bikes sold (any mode) and new customers (created, Pakistan time).
+  const [mBikesSold, mCustomers] = await Promise.all([
+    monthly(Bike, { status: "sold", ...trendMatch("sale.date") }, "sale.date", 1),
+    Customer.aggregate([
+      { $match: { createdAt: { $gte: new Date(trendFrom.getTime() - 5 * 3600e3) } } },
+      { $group: { _id: { $dateToString: { format: "%Y-%m", date: "$createdAt", timezone: "+05:00" } }, s: { $sum: 1 } } },
+    ]).then((rows) => Object.fromEntries(rows.map((r) => [r._id, r.s]))),
+  ]);
   const manualBy = (m, types) => mManual.filter((r) => r._id.m === m && types.includes(r._id.t)).reduce((s, r) => s + r.s, 0);
   const trend = months.map(({ key, label }) => ({
     month: key,
@@ -121,7 +129,15 @@ export async function getFinanceOverview(actor, period = "month") {
     collections: mPayments[key] ?? 0,
     salesInstallment: mPlans[key] ?? 0,
     salesCash: mCashSales[key] ?? 0,
+    bikesSold: mBikesSold[key] ?? 0,
+    newCustomers: mCustomers[key] ?? 0,
   }));
+  // Cash position at the end of each month: today's cash in hand, walked back month by month.
+  let position = allTime.net;
+  for (let i = trend.length - 1; i >= 0; i--) {
+    trend[i].cashPosition = position;
+    position -= trend[i].cashIn - trend[i].cashOut;
+  }
 
   // Where money came from and went, in the selected period.
   const expenseRows = await FinancialTransaction.aggregate([
@@ -151,7 +167,8 @@ export async function getFinanceOverview(actor, period = "month") {
       net: { value: current.net, previous: previous.net },
       sales: { value: sales.total, previous: prevSales.total, cash: sales.cash, installment: sales.installment, count: sales.plansCount + sales.cashSalesCount },
       newCustomers: { value: newCustomers, previous: prevCustomers },
-      bikesSold,
+      collections: { value: current.parts.installments, previous: previous.parts.installments },
+      bikesSold: { value: bikesSold, previous: await Bike.countDocuments({ status: "sold", "sale.date": { $gte: range.prevFrom, $lt: range.prevTo } }) },
     },
     position: {
       cashInHand: allTime.net,

@@ -50,6 +50,8 @@ export const SEGMENT_LABELS = {
   plans: "Installment plans",
   bikes: "Bikes",
   cashbook: "Cash book",
+  installments: "Installments",
+  showroom: "Showroom",
   users: "Staff accounts",
   account: "My account",
   search: "Search",

@@ -134,6 +134,33 @@ describe("cash book and figures reconcile", () => {
     await assert.rejects(m.finance.getFinanceOverview(staff("user", ["customers.view"]), "month"), m.errors.ForbiddenError);
   });
 
+  test("installments page figures agree with the main figures", async () => {
+    const insights = await import("@/server/services/insights/installments");
+    const fin = await m.finance.getFinanceOverview(owner, "month");
+    const d = await insights.getInstallmentInsights(owner, "month");
+    assert.equal(d.position.receivables, fin.position.receivables);
+    assert.equal(d.kpis.collected.value, 50000 + 25000 + 124000, "advance + installment + final payment");
+    assert.equal(d.trend.at(-1).collected, d.kpis.collected.value);
+    assert.ok(d.trend.at(-1).expected >= 50000, "the advance is expected on the agreement date");
+    assert.equal(d.kpis.newPlans.value, 1);
+    assert.equal(d.kpis.completed, 1);
+    await assert.rejects(insights.getInstallmentInsights(staff("user", ["bikes.view"]), "month"), m.errors.ForbiddenError);
+  });
+
+  test("showroom page figures: stock, sales and seller balances", async () => {
+    const insights = await import("@/server/services/insights/showroom");
+    const d = await insights.getShowroomInsights(owner, "month");
+    assert.equal(d.position.inStock, 1);
+    assert.equal(d.position.stockValue, 100000);
+    assert.equal(d.position.owedToSellers, 40000);
+    assert.equal(d.kpis.sold.value, 2);
+    assert.equal(d.kpis.salesValue.value, 120000 + 200000);
+    assert.equal(d.kpis.salesValue.cash, 120000);
+    assert.equal(d.kpis.bought.value, 3);
+    assert.equal(d.trend.at(-1).sold, 2);
+    await assert.rejects(insights.getShowroomInsights(staff("user", ["installments.view"]), "month"), m.errors.ForbiddenError);
+  });
+
   test("period ranges: month, 3 months, 12 months, this year", () => {
     const r = m.cash.periodRange("3m", "2026-11-11");
     assert.equal(bd.dateOnlyString(r.from), "2026-09-01");
