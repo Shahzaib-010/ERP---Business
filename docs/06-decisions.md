@@ -126,3 +126,38 @@ that follow from it:
 - **Audit:** logins, failed staff logins, account changes, permission changes and
   password resets are written to `auditLogs` with scope `security`. Passwords and
   hashes are never written there.
+
+## D-006 — Owner answers to the D-004 questions — Decided (2026-11-11)
+
+Answers given by the owner. Numbers match the D-004 question list.
+
+1. **Numbering:** continue from the paper records. Old accounts keep their paper
+   account and receipt numbers when entered; new numbers continue after the
+   highest number already used. (Implemented with plans in Phase 4 and receipts in Phase 6.)
+2. **Settlement discount:** answer was "whatever the amount is, it will stay as it is".
+   Read as: **no settlement discount for now**; a balance is closed only by payments.
+   *To confirm with the owner before Phase 4.*
+3. **Old accounts:** all running and past paper accounts will be entered later, with
+   their past payments, then new accounts. Until then, development uses dummy data
+   (`npm run seed:dev`).
+4. **Overdue:** a plan is overdue the day after its due day. The due day is set per
+   plan and can be changed by staff. The plan shows how many days the current
+   installment is late. No grace days.
+5. **Guarantors:** optional. A plan may have any number of guarantors (zero or more).
+   Stored on the plan, as D-004 proposed (Phase 4).
+6. **Security cheque:** kept as a document (attachment) on the plan for now. No
+   held/returned/cashed tracking (Phase 4/6).
+7. **Printing:** receipts only. No agreement form printing.
+8. **Bike register photos:** still to come from the owner (needed for Phase 3).
+
+## D-007 — Phase 2 customer and search design — Decided (2026-11-11)
+
+- **Phones** are stored as digits only (`03001234567`), up to 3 per customer, 7–15 digits each.
+- **CNIC display:** lists and search results show the masked CNIC (`*****-***4567-1`).
+  The customer profile and edit form show the full CNIC to staff with `customers.view`.
+  The full CNIC is never written to the audit log (it is masked there).
+- **Universal search** (`/search`, box in the header) is staff only. Results are grouped
+  by type and each group needs its own permission (customers now; plans, bikes and
+  receipts are added in their phases). Customer portal users cannot search.
+- Customer edits are audited (scope `operational`) with before/after values.
+- Customers are never deleted (a later phase may add "archive" if the owner wants it).

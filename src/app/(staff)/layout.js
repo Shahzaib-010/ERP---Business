@@ -1,5 +1,7 @@
 import Link from "next/link";
+import Form from "next/form";
 import { Suspense } from "react";
+import { inputClass } from "@/components/ui";
 import { getStaffActor } from "@/server/auth/current";
 import { can } from "@/server/permissions";
 import { ROLE_LABELS } from "@/lib/permissions-catalog";
@@ -31,17 +33,27 @@ async function StaffNav() {
 
   const links = [
     { href: "/dashboard", label: "Dashboard" },
+    can(actor, "customers.view") && { href: "/customers", label: "Customers" },
     can(actor, "users.manage") && { href: "/users", label: "Staff accounts" },
   ].filter(Boolean);
 
   return (
     <>
-      <nav className="flex flex-1 flex-wrap gap-4 text-sm">
+      <nav className="flex flex-1 flex-wrap items-center gap-4 text-sm">
         {links.map((l) => (
           <Link key={l.href} href={l.href} className="text-slate-700 hover:text-slate-950">
             {l.label}
           </Link>
         ))}
+        <Form action="/search" className="w-full sm:ml-auto sm:w-64">
+          <input
+            name="q"
+            type="search"
+            placeholder="Search name, CNIC, phone…"
+            aria-label="Search"
+            className={inputClass}
+          />
+        </Form>
       </nav>
       <div className="flex items-center gap-3 text-sm">
         <Link href="/account" className="text-slate-700 hover:text-slate-950">

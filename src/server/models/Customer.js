@@ -2,7 +2,7 @@ import "server-only";
 import mongoose from "mongoose";
 
 // Fields come from the paper agreement and ledger card (docs/07 §7.2).
-// Customer create/edit screens arrive in Phase 2.
+// Screens: src/app/(staff)/customers. Service: src/server/services/customers.
 const customerSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 100 },
@@ -25,5 +25,7 @@ const customerSchema = new mongoose.Schema(
 
 customerSchema.index({ cnicNormalized: 1 }, { unique: true });
 customerSchema.index({ phones: 1 });
+customerSchema.index({ name: 1, _id: 1 });
+customerSchema.index({ createdAt: -1, _id: -1 });
 
 export const Customer = mongoose.models.Customer ?? mongoose.model("Customer", customerSchema);
