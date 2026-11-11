@@ -1,16 +1,29 @@
 import Link from "next/link";
 import Form from "next/form";
 import { Suspense } from "react";
-import { Card, LoadingBlock, PageHeader, buttonClass, inputClass } from "@/components/ui";
+import { ArrowRightIcon, SearchIcon, SearchXIcon, UsersIcon } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { Kbd } from "@/components/ui/kbd";
+import { PageBody, PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/skeletons";
 import { requireStaffPage } from "@/server/auth/current";
 import { universalSearch } from "@/server/services/search";
+import { initials } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 
 export const metadata = { title: "Search" };
 
+const GROUP_ICONS = { customers: UsersIcon };
+const RESULT_LIMIT = 20;
+
 export default function SearchPage({ searchParams }) {
   return (
-    <Suspense fallback={<LoadingBlock />}>
+    <Suspense fallback={<PageSkeleton />}>
       <SearchContent searchParams={searchParams} />
     </Suspense>
   );
@@ -20,58 +33,113 @@ async function SearchContent({ searchParams }) {
   const actor = await requireStaffPage();
   const sp = await searchParams;
   const { q, groups, searchable } = await universalSearch(actor, typeof sp.q === "string" ? sp.q : "");
-  const hint = searchable.length ? `Search by ${searchable.join("; ")}.` : "You have no modules you can search.";
   const found = groups.reduce((n, g) => n + g.items.length, 0);
 
   return (
-    <>
-      <PageHeader title="Search" description={hint} />
+    <PageBody className="mx-auto w-full max-w-4xl">
+      <PageHeader
+        icon={SearchIcon}
+        title="Search"
+        description={searchable.length ? `Find records by ${searchable.join("; ")}.` : "Your account has no modules you can search."}
+      />
 
-      <Form action="/search" className="mb-6 flex max-w-xl gap-2">
-        <input name="q" defaultValue={q} aria-label="Search" placeholder="Type and press Enter" className={inputClass} autoFocus />
-        <button type="submit" className={buttonClass("secondary")}>
+      <Form action="/search" className="flex gap-2">
+        <InputGroup className="h-11 bg-card">
+          <InputGroupAddon>
+            <SearchIcon />
+          </InputGroupAddon>
+          <InputGroupInput name="q" defaultValue={q} aria-label="Search" placeholder="Type a name, CNIC or phone number…" autoFocus className="text-base" />
+          <InputGroupAddon align="inline-end" className="hidden sm:flex">
+            <Kbd>Enter</Kbd>
+          </InputGroupAddon>
+        </InputGroup>
+        <Button type="submit" size="lg" className="h-11">
           Search
-        </button>
+        </Button>
       </Form>
 
-      {q && found === 0 && (
+      {!q && (
         <Card>
-          <p className="text-sm text-slate-600">Nothing found for “{q}”.</p>
+          <CardContent>
+            <Empty className="py-10">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <SearchIcon />
+                </EmptyMedia>
+                <EmptyTitle>Search the whole business</EmptyTitle>
+                <EmptyDescription>
+                  Tip: press <Kbd>Ctrl</Kbd> <Kbd>K</Kbd> anywhere to search without leaving the page.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </CardContent>
         </Card>
       )}
 
-      <div className="space-y-6">
-        {groups
-          .filter((g) => g.items.length > 0)
-          .map((g) => (
-            <section key={g.type}>
-              <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                {g.label} ({g.items.length})
-              </h2>
-              <Card className="divide-y divide-slate-100 p-0">
+      {q && found === 0 && (
+        <Card>
+          <CardContent>
+            <Empty className="py-10">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <SearchXIcon />
+                </EmptyMedia>
+                <EmptyTitle>No results for “{q}”</EmptyTitle>
+                <EmptyDescription>Check the spelling, try fewer words, or search by CNIC or phone number.</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </CardContent>
+        </Card>
+      )}
+
+      {groups
+        .filter((g) => g.items.length > 0)
+        .map((g) => {
+          const Icon = GROUP_ICONS[g.type] ?? SearchIcon;
+          return (
+            <Card key={g.type} className="gap-0 py-0">
+              <CardHeader className="flex flex-row items-center justify-between border-b py-3">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <Icon className="size-4 text-primary" /> {g.label}
+                  <Badge variant="secondary" className="tabular-nums">
+                    {g.items.length}
+                    {g.items.length === RESULT_LIMIT && "+"}
+                  </Badge>
+                </CardTitle>
+                {g.type === "customers" && g.items.length === RESULT_LIMIT && (
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/customers?q=${encodeURIComponent(q)}`}>
+                      See all <ArrowRightIcon />
+                    </Link>
+                  </Button>
+                )}
+              </CardHeader>
+              <ul className="divide-y">
                 {g.type === "customers" &&
                   g.items.map((c) => (
-                    <Link key={c.id} href={`/customers/${c.id}`} className="block px-4 py-3 hover:bg-slate-50">
-                      <span className="font-medium">{c.name}</span>
-                      {c.fatherOrHusbandName && <span className="text-slate-500"> · {c.fatherOrHusbandName}</span>}
-                      <span className="mt-0.5 block font-mono text-xs text-slate-500">
-                        {c.cnicMasked}
-                        {c.phones[0] && ` · ${formatPhone(c.phones[0])}`}
-                      </span>
-                    </Link>
+                    <li key={c.id}>
+                      <Link href={`/customers/${c.id}`} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50">
+                        <Avatar className="size-9">
+                          <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">{initials(c.name)}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium group-hover:text-primary">
+                            {c.name}
+                            {c.fatherOrHusbandName && <span className="font-normal text-muted-foreground"> · {c.fatherOrHusbandName}</span>}
+                          </p>
+                          <p className="truncate font-mono text-xs text-muted-foreground">
+                            {c.cnicMasked}
+                            {c.phones[0] && ` · ${formatPhone(c.phones[0])}`}
+                          </p>
+                        </div>
+                        <ArrowRightIcon className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                      </Link>
+                    </li>
                   ))}
-              </Card>
-              {g.type === "customers" && g.items.length === 20 && (
-                <p className="mt-2 text-xs text-slate-500">
-                  Showing the first 20.{" "}
-                  <Link href={`/customers?q=${encodeURIComponent(q)}`} className="underline">
-                    See all matching customers
-                  </Link>
-                </p>
-              )}
-            </section>
-          ))}
-      </div>
-    </>
+              </ul>
+            </Card>
+          );
+        })}
+    </PageBody>
   );
 }

@@ -1,0 +1,38 @@
+// Human-readable names for audit actions. Shared by server and client.
+export const AUDIT_ACTION_LABELS = {
+  "auth.staff_login": "Signed in",
+  "auth.staff_login_failed": "Failed sign-in",
+  "auth.customer_login": "Customer signed in to portal",
+  "customer.create": "Added customer",
+  "customer.update": "Edited customer",
+  "customer.portal_password_set": "Set portal password",
+  "customer.portal_disabled": "Turned off portal login",
+  "staff.bootstrap_superadmin": "Created Superadmin",
+  "staff.create": "Created staff account",
+  "staff.update": "Changed staff account",
+  "staff.password_reset": "Reset staff password",
+  "staff.password_change": "Changed own password",
+};
+
+export const AUDIT_FIELD_LABELS = {
+  name: "Name",
+  fatherOrHusbandName: "Father / husband",
+  caste: "Caste",
+  profession: "Profession",
+  designation: "Designation",
+  cnicMasked: "CNIC",
+  phones: "Phones",
+  homeAddress: "Home address",
+  collectionAddress: "Collection address",
+  businessAddress: "Business address",
+  notes: "Notes",
+  portalEnabled: "Portal login",
+  role: "Role",
+  permissions: "Permissions",
+  isActive: "Active",
+  username: "Username",
+};
+
+export function auditActionLabel(action) {
+  return AUDIT_ACTION_LABELS[action] ?? action;
+}

@@ -1,5 +1,7 @@
 import { Suspense } from "react";
-import { Card, LoadingBlock, PageHeader } from "@/components/ui";
+import { UserPlusIcon } from "lucide-react";
+import { PageBody, PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/skeletons";
 import { requireStaffPage } from "@/server/auth/current";
 import { createCustomerAction } from "../actions";
 import { CustomerForm } from "../customer-form";
@@ -8,20 +10,22 @@ export const metadata = { title: "Add customer" };
 
 export default function NewCustomerPage() {
   return (
-    <>
-      <PageHeader title="Add customer" description="Fields marked * are required." />
-      <Suspense fallback={<LoadingBlock />}>
-        <NewCustomerContent />
-      </Suspense>
-    </>
+    <Suspense fallback={<PageSkeleton variant="form" />}>
+      <NewCustomerContent />
+    </Suspense>
   );
 }
 
 async function NewCustomerContent() {
   await requireStaffPage("customers.create");
   return (
-    <Card>
+    <PageBody className="mx-auto w-full max-w-4xl">
+      <PageHeader
+        icon={UserPlusIcon}
+        title="Add customer"
+        description="Fields marked * are required. Everything else can be filled in later."
+      />
       <CustomerForm action={createCustomerAction} cancelHref="/customers" />
-    </Card>
+    </PageBody>
   );
 }

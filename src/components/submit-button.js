@@ -1,13 +1,16 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { buttonClass } from "./ui";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
-export function SubmitButton({ children, pendingLabel = "Saving…", variant = "primary", className = "" }) {
+/** Submit button that disables itself and shows a spinner while its form is submitting. */
+export function SubmitButton({ children, pendingLabel = "Saving…", variant = "default", size = "default", className, icon: Icon }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className={buttonClass(variant, className)}>
+    <Button type="submit" disabled={pending} variant={variant} size={size} className={className}>
+      {pending ? <Spinner /> : Icon ? <Icon /> : null}
       {pending ? pendingLabel : children}
-    </button>
+    </Button>
   );
 }

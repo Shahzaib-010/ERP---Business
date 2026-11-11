@@ -1,0 +1,42 @@
+import {
+  LayoutDashboardIcon,
+  SearchIcon,
+  ShieldCheckIcon,
+  UserCogIcon,
+  UsersIcon,
+} from "lucide-react";
+
+// Sidebar and command-menu entries. Which entries a person sees is decided on the server
+// (the staff layout passes the allowed hrefs); this file only describes how they look.
+// Add an entry when a module's screens are built.
+export const NAV_GROUPS = [
+  {
+    label: "Overview",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
+      { href: "/search", label: "Search", icon: SearchIcon },
+    ],
+  },
+  {
+    label: "Sales",
+    items: [{ href: "/customers", label: "Customers", icon: UsersIcon, permission: "customers.view" }],
+  },
+  {
+    label: "Administration",
+    items: [{ href: "/users", label: "Staff accounts", icon: ShieldCheckIcon, permission: "users.manage" }],
+  },
+];
+
+export const ACCOUNT_ITEM = { href: "/account", label: "My account", icon: UserCogIcon };
+
+/** Breadcrumb labels for fixed path segments. Record ids get their label from the page. */
+export const SEGMENT_LABELS = {
+  dashboard: "Dashboard",
+  customers: "Customers",
+  users: "Staff accounts",
+  account: "My account",
+  search: "Search",
+  new: "New",
+  edit: "Edit",
+  "no-access": "No access",
+};

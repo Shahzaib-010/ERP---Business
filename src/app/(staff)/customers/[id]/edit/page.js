@@ -1,19 +1,22 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
-import { Card, LoadingBlock, PageHeader } from "@/components/ui";
+import { PencilIcon } from "lucide-react";
+import { BreadcrumbLabel } from "@/components/app/breadcrumbs";
+import { PageBody, PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/skeletons";
 import { requireStaffPage } from "@/server/auth/current";
 import { can } from "@/server/permissions";
 import { getCustomer } from "@/server/services/customers";
 import { NotFoundError } from "@/server/errors";
+import { formatPhone } from "@/lib/phone";
 import { updateCustomerAction } from "../../actions";
 import { CustomerForm } from "../../customer-form";
-import { formatPhone } from "@/lib/phone";
 
 export const metadata = { title: "Edit customer" };
 
 export default function EditCustomerPage({ params }) {
   return (
-    <Suspense fallback={<LoadingBlock />}>
+    <Suspense fallback={<PageSkeleton variant="form" />}>
       <EditCustomerContent params={params} />
     </Suspense>
   );
@@ -33,15 +36,14 @@ async function EditCustomerContent({ params }) {
   }
 
   return (
-    <>
-      <PageHeader title={`Edit ${customer.name}`} description="Fields marked * are required." />
-      <Card>
-        <CustomerForm
-          action={updateCustomerAction.bind(null, customer.id)}
-          customer={{ ...customer, phones: customer.phones.map(formatPhone) }}
-          cancelHref={`/customers/${customer.id}`}
-        />
-      </Card>
-    </>
+    <PageBody className="mx-auto w-full max-w-4xl">
+      <BreadcrumbLabel segment={customer.id} label={customer.name} />
+      <PageHeader icon={PencilIcon} title={`Edit ${customer.name}`} description="Changes are saved to the customer's history." />
+      <CustomerForm
+        action={updateCustomerAction.bind(null, customer.id)}
+        customer={{ ...customer, phones: customer.phones.map(formatPhone) }}
+        cancelHref={`/customers/${customer.id}`}
+      />
+    </PageBody>
   );
 }

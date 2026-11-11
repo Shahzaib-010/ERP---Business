@@ -1,30 +1,34 @@
 "use client";
 
-import { useActionState } from "react";
-import { Alert, Field, Input } from "@/components/ui";
+import { useActionState, useEffect, useRef } from "react";
+import { KeyRoundIcon } from "lucide-react";
+import { toast } from "sonner";
+import { FormAlert } from "@/components/app/form-alert";
+import { TextField } from "@/components/app/form-fields";
 import { SubmitButton } from "@/components/submit-button";
 import { changeOwnPasswordAction } from "./actions";
 
 export function ChangePasswordForm() {
   const [state, formAction] = useActionState(changeOwnPasswordAction, null);
+  const formRef = useRef(null);
   const errors = state?.fieldErrors ?? {};
 
+  useEffect(() => {
+    if (state?.ok) {
+      toast.success("Password changed", { description: "Other devices have been signed out." });
+      formRef.current?.reset();
+    }
+  }, [state]);
+
   return (
-    <form action={formAction} className="space-y-4" noValidate>
-      <Alert>{state && !state.ok ? state.error : null}</Alert>
-      <Alert tone="success">
-        {state?.ok ? "Password changed. Other devices have been signed out." : null}
-      </Alert>
-      <Field label="Current password" name="currentPassword" error={errors.currentPassword}>
-        <Input name="currentPassword" type="password" autoComplete="current-password" error={errors.currentPassword} />
-      </Field>
-      <Field label="New password" name="newPassword" error={errors.newPassword} hint="At least 8 characters.">
-        <Input name="newPassword" type="password" autoComplete="new-password" error={errors.newPassword} />
-      </Field>
-      <Field label="Repeat new password" name="confirmPassword" error={errors.confirmPassword}>
-        <Input name="confirmPassword" type="password" autoComplete="new-password" error={errors.confirmPassword} />
-      </Field>
-      <SubmitButton>Change password</SubmitButton>
+    <form ref={formRef} action={formAction} className="flex max-w-sm flex-col gap-4" noValidate>
+      <FormAlert>{state && !state.ok ? state.error : null}</FormAlert>
+      <TextField name="currentPassword" type="password" label="Current password" autoComplete="current-password" error={errors.currentPassword} />
+      <TextField name="newPassword" type="password" label="New password" autoComplete="new-password" hint="At least 8 characters." error={errors.newPassword} />
+      <TextField name="confirmPassword" type="password" label="Repeat new password" autoComplete="new-password" error={errors.confirmPassword} />
+      <div>
+        <SubmitButton icon={KeyRoundIcon}>Change password</SubmitButton>
+      </div>
     </form>
   );
 }

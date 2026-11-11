@@ -1,20 +1,40 @@
 "use client";
 
-import { useActionState } from "react";
-import { Alert, Field, Input } from "@/components/ui";
+import { useActionState, useEffect, useRef } from "react";
+import { KeyRoundIcon } from "lucide-react";
+import { toast } from "sonner";
+import { FormAlert } from "@/components/app/form-alert";
+import { TextField } from "@/components/app/form-fields";
 import { SubmitButton } from "@/components/submit-button";
 
 export function ResetPasswordForm({ action }) {
   const [state, formAction] = useActionState(action, null);
+  const formRef = useRef(null);
   const errors = state?.fieldErrors ?? {};
+
+  useEffect(() => {
+    if (state?.ok) {
+      toast.success("Password reset", { description: "They have been signed out everywhere." });
+      formRef.current?.reset();
+    }
+  }, [state]);
+
   return (
-    <form action={formAction} className="space-y-4" noValidate>
-      <Alert>{state && !state.ok ? state.error : null}</Alert>
-      <Alert tone="success">{state?.ok ? "Password reset." : null}</Alert>
-      <Field label="New password" name="password" error={errors.password} hint="At least 8 characters.">
-        <Input name="password" type="password" autoComplete="new-password" error={errors.password} />
-      </Field>
-      <SubmitButton variant="secondary">Reset password</SubmitButton>
+    <form ref={formRef} action={formAction} className="flex max-w-sm flex-col gap-4" noValidate>
+      <FormAlert>{state && !state.ok ? state.error : null}</FormAlert>
+      <TextField
+        name="password"
+        type="password"
+        label="New password"
+        autoComplete="new-password"
+        hint="At least 8 characters."
+        error={errors.password}
+      />
+      <div>
+        <SubmitButton variant="outline" icon={KeyRoundIcon}>
+          Reset password
+        </SubmitButton>
+      </div>
     </form>
   );
 }

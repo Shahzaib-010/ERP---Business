@@ -1,70 +1,46 @@
-import Link from "next/link";
-import Form from "next/form";
 import { Suspense } from "react";
-import { inputClass } from "@/components/ui";
-import { getStaffActor } from "@/server/auth/current";
+import { cookies } from "next/headers";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app/app-sidebar";
+import { BreadcrumbProvider } from "@/components/app/breadcrumbs";
+import { SiteHeader } from "@/components/app/site-header";
+import { ShellSkeleton } from "@/components/app/skeletons";
+import { NAV_GROUPS } from "@/components/app/nav-config";
+import { requireStaffPage } from "@/server/auth/current";
 import { can } from "@/server/permissions";
 import { ROLE_LABELS } from "@/lib/permissions-catalog";
 import { BUSINESS } from "@/lib/business";
-import { logoutAction } from "@/app/auth-actions";
 
-// The shell renders at once; the parts that need the session stream in.
+// Staff app shell: collapsible sidebar on the left, page on the right.
+// The shell checks the session for navigation only; every page and action checks it again.
 export default function StaffLayout({ children }) {
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <Link href="/dashboard" className="font-semibold">
-            {BUSINESS.name}
-          </Link>
-          <Suspense fallback={<div className="h-5 flex-1" />}>
-            <StaffNav />
-          </Suspense>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
-    </div>
+    <Suspense fallback={<ShellSkeleton />}>
+      <StaffShell>{children}</StaffShell>
+    </Suspense>
   );
 }
 
-async function StaffNav() {
-  const actor = await getStaffActor();
-  if (!actor) return <div className="flex-1" />;
+async function StaffShell({ children }) {
+  const actor = await requireStaffPage();
+  const defaultOpen = (await cookies()).get("sidebar_state")?.value !== "false";
 
-  const links = [
-    { href: "/dashboard", label: "Dashboard" },
-    can(actor, "customers.view") && { href: "/customers", label: "Customers" },
-    can(actor, "users.manage") && { href: "/users", label: "Staff accounts" },
-  ].filter(Boolean);
+  const allowed = NAV_GROUPS.flatMap((g) => g.items)
+    .filter((item) => !item.permission || can(actor, item.permission))
+    .map((item) => item.href);
+  const user = { name: actor.name, username: actor.username, roleLabel: ROLE_LABELS[actor.role] };
 
   return (
-    <>
-      <nav className="flex flex-1 flex-wrap items-center gap-4 text-sm">
-        {links.map((l) => (
-          <Link key={l.href} href={l.href} className="text-slate-700 hover:text-slate-950">
-            {l.label}
-          </Link>
-        ))}
-        <Form action="/search" className="w-full sm:ml-auto sm:w-64">
-          <input
-            name="q"
-            type="search"
-            placeholder="Search name, CNIC, phone…"
-            aria-label="Search"
-            className={inputClass}
-          />
-        </Form>
-      </nav>
-      <div className="flex items-center gap-3 text-sm">
-        <Link href="/account" className="text-slate-700 hover:text-slate-950">
-          {actor.name} <span className="text-slate-400">({ROLE_LABELS[actor.role]})</span>
-        </Link>
-        <form action={logoutAction}>
-          <button type="submit" className="text-slate-500 underline hover:text-slate-900">
-            Log out
-          </button>
-        </form>
-      </div>
-    </>
+    <SidebarProvider defaultOpen={defaultOpen}>
+      <BreadcrumbProvider>
+        <AppSidebar allowed={allowed} user={user} business={{ name: BUSINESS.name }} />
+        <SidebarInset className="min-w-0">
+          <SiteHeader allowed={allowed} canCreateCustomer={can(actor, "customers.create")} />
+          <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl">{children}</div>
+          </div>
+        </SidebarInset>
+      </BreadcrumbProvider>
+    </SidebarProvider>
   );
 }

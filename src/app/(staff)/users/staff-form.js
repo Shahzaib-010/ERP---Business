@@ -1,9 +1,25 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Alert, Field, Input, inputClass } from "@/components/ui";
+import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
+import { SaveIcon, ShieldIcon, UserIcon, UserPlusIcon } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { FormAlert } from "@/components/app/form-alert";
+import { TextField } from "@/components/app/form-fields";
 import { SubmitButton } from "@/components/submit-button";
 import { PERMISSION_GROUPS } from "@/lib/permissions-catalog";
+
+const ROLE_HELP = {
+  admin: "Admins can manage customers, bikes, plans, payments and the cash book. They cannot manage staff accounts or system settings.",
+  user: "A User can do only what is ticked below.",
+};
 
 /**
  * Create (no `user`) or edit (with `user`) an Admin or User account.
@@ -16,94 +32,114 @@ export function StaffForm({ action, user }) {
   const [role, setRole] = useState(values.role ?? "user");
   const errors = state?.fieldErrors ?? {};
   const granted = new Set(values.permissions ?? []);
+  const formKey = state?.values ? JSON.stringify(state.values) : "initial";
+
+  useEffect(() => {
+    if (isEdit && state?.ok) toast.success("Changes saved");
+  }, [state, isEdit]);
 
   return (
-    <form action={formAction} className="space-y-5" noValidate>
-      <Alert>{state && !state.ok ? state.error : null}</Alert>
-      <Alert tone="success">{state?.ok ? "Saved." : null}</Alert>
+    <form key={formKey} action={formAction} className="flex flex-col gap-6" noValidate>
+      <FormAlert>{state && !state.ok ? state.error : null}</FormAlert>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Full name" name="name" error={errors.name}>
-          <Input name="name" defaultValue={values.name ?? ""} error={errors.name} />
-        </Field>
-        {isEdit ? (
-          <Field label="Username" name="username-readonly">
-            <Input name="username-readonly" value={user.username} disabled readOnly />
-          </Field>
-        ) : (
-          <Field label="Username" name="username" error={errors.username} hint="Used to log in. Cannot be changed later.">
-            <Input
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <UserIcon className="size-4 text-primary" /> Account
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-5 sm:grid-cols-2">
+          <TextField name="name" label="Full name" required defaultValue={values.name ?? ""} error={errors.name} />
+          {isEdit ? (
+            <TextField name="username-readonly" label="Username" value={user.username} disabled readOnly hint="Usernames cannot be changed." />
+          ) : (
+            <TextField
               name="username"
+              label="Username"
+              required
               defaultValue={values.username ?? ""}
               autoCapitalize="none"
               spellCheck={false}
+              hint="Used to sign in. Cannot be changed later."
               error={errors.username}
+              inputClassName="font-mono"
             />
+          )}
+          <Field data-invalid={errors.role ? true : undefined}>
+            <FieldLabel htmlFor="role">Role</FieldLabel>
+            <Select name="role" value={role} onValueChange={setRole}>
+              <SelectTrigger id="role" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">User — only ticked permissions</SelectItem>
+                <SelectItem value="admin">Admin — all daily business work</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.role && <FieldError>{errors.role}</FieldError>}
           </Field>
-        )}
-        <Field label="Role" name="role" error={errors.role}>
-          <select
-            id="role"
-            name="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className={inputClass}
-          >
-            <option value="user">User (only the permissions ticked below)</option>
-            <option value="admin">Admin (all daily business work)</option>
-          </select>
-        </Field>
-        {!isEdit && (
-          <Field label="Starting password" name="password" error={errors.password} hint="At least 8 characters. Give it to the person privately.">
-            <Input name="password" type="password" autoComplete="new-password" error={errors.password} />
-          </Field>
-        )}
-      </div>
+          {!isEdit && (
+            <TextField
+              name="password"
+              type="password"
+              label="Starting password"
+              required
+              autoComplete="new-password"
+              hint="At least 8 characters. Give it to the person privately."
+              error={errors.password}
+            />
+          )}
+        </CardContent>
+      </Card>
 
-      {role === "user" ? (
-        <fieldset className="space-y-3">
-          <legend className="text-sm font-medium">Permissions</legend>
-          <p className="text-xs text-slate-500">A User can do only what is ticked here.</p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ShieldIcon className="size-4 text-primary" /> Permissions
+          </CardTitle>
+          <CardDescription>{ROLE_HELP[role]}</CardDescription>
+        </CardHeader>
+        {role === "user" && (
+          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {PERMISSION_GROUPS.map((group) => (
-              <div key={group.module} className="rounded-lg border border-slate-200 p-3">
-                <p className="mb-2 text-sm font-medium">{group.label}</p>
-                {group.actions.map((a) => (
-                  <label key={a.key} className="flex items-center gap-2 py-0.5 text-sm">
-                    <input
-                      type="checkbox"
-                      name="permissions"
-                      value={a.key}
-                      defaultChecked={granted.has(a.key)}
-                      className="h-4 w-4 rounded border-slate-300"
-                    />
-                    {a.label}
-                  </label>
-                ))}
+              <div key={group.module} className="rounded-lg border p-4">
+                <p className="mb-3 text-sm font-medium">{group.label}</p>
+                <div className="space-y-2.5">
+                  {group.actions.map((a) => (
+                    <div key={a.key} className="flex items-center gap-2">
+                      <Checkbox id={`perm-${a.key}`} name="permissions" value={a.key} defaultChecked={granted.has(a.key)} />
+                      <Label htmlFor={`perm-${a.key}`} className="font-normal">
+                        {a.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
-          </div>
-        </fieldset>
-      ) : (
-        <p className="text-sm text-slate-600">
-          Admins can manage customers, bikes, plans, payments and the cash book. They cannot
-          manage staff accounts or system settings.
-        </p>
-      )}
+          </CardContent>
+        )}
+      </Card>
 
       {isEdit && (
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            name="isActive"
-            defaultChecked={values.isActive ?? true}
-            className="h-4 w-4 rounded border-slate-300"
-          />
-          Account active (unticking signs the person out at once)
-        </label>
+        <Card>
+          <CardContent className="flex items-center justify-between gap-4">
+            <div>
+              <Label htmlFor="isActive" className="text-sm font-medium">
+                Account active
+              </Label>
+              <p className="text-sm text-muted-foreground">Turning this off signs the person out at once.</p>
+            </div>
+            <Switch id="isActive" name="isActive" defaultChecked={values.isActive ?? true} />
+          </CardContent>
+        </Card>
       )}
 
-      <SubmitButton>{isEdit ? "Save changes" : "Create account"}</SubmitButton>
+      <div className="sticky bottom-0 z-10 -mx-4 flex flex-col-reverse gap-2 border-t bg-background/90 px-4 py-3 backdrop-blur sm:mx-0 sm:flex-row sm:justify-end sm:rounded-xl sm:border">
+        <Button variant="outline" asChild>
+          <Link href="/users">Cancel</Link>
+        </Button>
+        <SubmitButton icon={isEdit ? SaveIcon : UserPlusIcon}>{isEdit ? "Save changes" : "Create account"}</SubmitButton>
+      </div>
     </form>
   );
 }

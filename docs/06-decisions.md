@@ -175,3 +175,24 @@ Supersedes D-006 answers 2 and 8.
   defined from the agreement and ledger forms (model, year, colour, new/used,
   registration and serial numbers) — see the Phase 3 proposal. **Bike photos are an
   optional attachment field** on the bike record (stored with the private files in Phase 6).
+
+## D-009 — Bike fields and plan items — Decided (2026-11-11)
+
+- **Bike fields confirmed by the owner:** make, model, model year, colour, new/used,
+  registration number (optional), engine number (optional), chassis number (optional),
+  notes, photos (optional). **Purchase:** seller name, phone, CNIC (optional), address,
+  purchase price, amount paid now (rest is owed to the seller), purchase date.
+  **Sale:** customer, sale price, full payment or installment (opens a plan).
+- **Installment plans are for any item**, not only bikes (as on the paper form,
+  "حاصل کردہ چیز"). A plan can link to a bike from the register when the item is a bike.
+
+## D-010 — UI stack — Decided (2026-11-11)
+
+- **shadcn/ui** (Radix base, "nova" preset, JavaScript) for components, **lucide-react**
+  for icons, **tw-animate-css** and **motion** for animation, **sonner** for toasts,
+  **next-themes** for light/dark mode.
+- Staff app shell: collapsible left sidebar (state kept in the `sidebar_state` cookie),
+  sticky top bar with breadcrumbs and a Ctrl+K command menu, page on the right.
+- Every page has: a page header, a loading skeleton, empty states, an error boundary
+  and toasts for saved changes. Destructive actions ask for confirmation.
+- Brand colour: deep indigo-blue (`--primary` in `src/app/globals.css`).
