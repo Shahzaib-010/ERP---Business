@@ -161,3 +161,17 @@ Answers given by the owner. Numbers match the D-004 question list.
   receipts are added in their phases). Customer portal users cannot search.
 - Customer edits are audited (scope `operational`) with before/after values.
 - Customers are never deleted (a later phase may add "archive" if the owner wants it).
+
+## D-008 — Settlement discount and bike photos — Decided (2026-11-11)
+
+Supersedes D-006 answers 2 and 8.
+
+- **Settlement discount:** a plan is normally closed only when the full agreed total
+  is paid. In a special case the **Superadmin only** may close the remaining balance
+  with a manual discount (the "NIL 1000 Less" line on the paper card). It is entered
+  by hand, needs a reason, reduces the receivable, is **not** cash received, and is
+  written to the audit log. No maximum amount was set. Admin and User cannot do it.
+- **Bike register:** the owner will not supply register photos. Bike fields are
+  defined from the agreement and ledger forms (model, year, colour, new/used,
+  registration and serial numbers) — see the Phase 3 proposal. **Bike photos are an
+  optional attachment field** on the bike record (stored with the private files in Phase 6).
