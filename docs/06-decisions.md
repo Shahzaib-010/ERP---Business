@@ -1,0 +1,128 @@
+# 6. Decision Log
+
+This log records decisions made after docs 01–05 were written. **If a decision
+here conflicts with docs 01–05, this file wins.** Add new decisions at the
+bottom with a date. Do not edit old entries; add a new entry that supersedes
+the old one.
+
+Status values: **Decided**, **Proposed** (a recommendation the owner has not
+confirmed yet), **Open** (still needs an answer).
+
+---
+
+## D-001 — Next.js full-stack replaces React + Express — Decided (2026-11-06)
+
+- The app is a single **Next.js (App Router) app in JavaScript**. There is no
+  separate Express server.
+- Backend code lives in `src/server/` (models, services, auth, permissions,
+  validation). Every file there starts with `import 'server-only'`.
+- Route handlers (`src/app/api/**/route.js`) and Server Actions stay thin:
+  read the session, validate the input, call a service, return the result.
+- Business rules and calculations live in services only (doc 02 §2.2 still
+  applies).
+- **Authorization:** every Server Action, route handler and service that reads
+  or writes protected data checks the session and permissions itself.
+  `src/proxy.js` (what Next.js used to call middleware) is only for
+  redirects, never for security.
+- Mongoose is still the database layer. Doc 02's Express module list maps
+  one-to-one onto `src/server/services/<module>`.
+- Installed version: Next.js 16 with `cacheComponents` enabled. Pages that read
+  the session render inside `<Suspense>` boundaries (see the bundled guide
+  `node_modules/next/dist/docs/01-app/02-guides/authentication-with-cache-components.md`).
+
+## D-002 — Free hosting — Proposed (2026-11-06)
+
+| Need | Choice | Notes |
+|---|---|---|
+| App hosting | Netlify (free) | Vercel Hobby is not allowed for commercial use. Render (free) is the fallback, but it sleeps when idle and the first load is slow. |
+| Database | MongoDB Atlas M0 (free, 512 MB) | M0 is a replica set, so multi-document transactions work. Use separate Atlas projects for dev and prod. |
+| Private files | Cloudflare R2 (10 GB free, needs a card on file) | Fallback: Backblaze B2 (10 GB free). Both use the S3 API, so the code is the same. |
+| Backups | GitHub Actions nightly `mongodump`, uploaded to R2/B2 | Atlas M0 has no automatic backups. |
+| Errors / uptime | Sentry free, UptimeRobot free | Optional. |
+
+## D-003 — Library choices — Proposed (2026-11-06)
+
+- Validation: Zod (the same schemas on client and server).
+- UI: Tailwind CSS v4; shadcn/ui components (JS mode) when building screens.
+- Forms: react-hook-form. Charts: Recharts. Dates: date-fns with the business
+  timezone `Asia/Karachi` (store UTC, display in the business timezone).
+- Auth: custom session auth. An opaque session id goes in an HttpOnly,
+  Secure, SameSite=Lax cookie; the session record is stored in MongoDB so a
+  disabled account loses access immediately. Passwords are hashed with
+  bcryptjs (pure JS, so it works on serverless hosts).
+- Money: integer **whole PKR** unless the owner says paisa is needed.
+  **Open:** confirm that whole PKR is enough.
+
+## Open decisions (from doc 01 §1.7) — Open
+
+1. Exact bike, customer, seller and agreement fields: waiting for photos of
+   the register and receipt samples.
+2. When a payment counts as overdue, and whether there is a grace period.
+3. Whether Admin can create ordinary staff User accounts.
+4. Default permissions for the User role.
+5. Receipt numbering format, business name, logo and contact details.
+6. Receipt language: Urdu, English or both.
+7. Storage provider (R2 or B2) and the upload size limit (proposed: 10 MB per
+   file).
+8. Bike status transitions the business actually uses.
+9. Customer password reset. Proposed: staff reset it in person after checking
+   the customer's CNIC, so no email or SMS service is needed.
+10. Formal profit calculation in the MVP, or reporting only.
+
+## D-004 — Phase 0 findings from the paper records — Proposed (2026-11-06)
+
+Full field list: `docs/07-source-fields.md`. Changes to the data model (doc 03)
+that follow from it:
+
+- **Customer:** add father/husband name, caste (optional), profession,
+  designation, home address, installment-collection address, business address.
+- **Guarantors (new):** one or more per installment plan: name, father's name,
+  profession, address, phones. Stored on the plan (a snapshot), not as customers.
+- **Security cheque (new, optional) on the plan:** number, bank, amount, status.
+- **Installment plan:** store `cashPrice` and `agreedTotal` (markup = difference),
+  `monthlyAmount`, `dueDayOfMonth`, optional `installmentCount`,
+  `previousAccountNumber`, free-text item description, model and serial/registration.
+- **Account and receipt numbers:** plain sequential integers.
+- **Settlement discount (new):** a non-cash adjustment that closes the last
+  part of a balance. It reduces the receivable and is not cash received.
+  Needs confirmation (Q2 below).
+
+### Questions for the owner (from Phase 0)
+
+1. **Numbering:** should the system continue from the paper numbers (next
+   account after the highest paper account, next receipt after the paper
+   receipt book), or start a new series?
+2. **Settlement discount:** may the business waive the last part of a balance
+   (as on the finished card: "1000 Less")? Who may do it: Superadmin only, or Admin too?
+   Is there a maximum?
+3. **Old accounts:** should running paper accounts be entered into the system
+   with their past payments (import), or only new accounts from a start date?
+4. **Overdue:** the form says "pay by the 10th of every month". Is a plan
+   overdue the day after the due day, or after some grace days?
+5. **Guarantors:** how many at most (1 or 2)? Is a guarantor required?
+6. **Security cheque:** should the system track it (held / returned / cashed)?
+7. **Agreement printing:** should the system print the Urdu agreement form,
+   or only receipts?
+8. **Bike register:** still need a photo of the bike purchase register and a
+   seller receipt to get the bike and seller fields.
+
+## D-005 — Phase 1 authentication design — Decided (2026-11-06)
+
+- **Staff log in with a username** (not email). Usernames are stored lower-case.
+- **Only the Superadmin creates and edits staff accounts** (Admin and User). This is the
+  safe default for open decision 3; letting Admin create Users is a one-line permission
+  change later. Superadmin accounts are created only by `npm run create-superadmin`,
+  which refuses to run when one already exists. No web page can create a Superadmin.
+- **New User accounts start with no permissions.** The Superadmin ticks each permission
+  (open decision 4 stays open for the *recommended* starting set).
+- **Sessions:** a random token in an HttpOnly cookie (`__Host-` prefixed in production);
+  the database stores only an HMAC of it (keyed with `SESSION_SECRET`). Staff sessions
+  last 12 hours, customer sessions 7 days. Disabling an account, resetting its password
+  or turning off a customer's portal login deletes its sessions at once.
+- **Login throttling:** 5 failed attempts per account or 30 per IP in 15 minutes block
+  further attempts for the rest of that window. Stored in MongoDB.
+- **Customer portal password** is set or reset by staff with `customers.edit` (proposed
+  answer to open decision 9). The screen for it comes with the customer profile in Phase 2.
+- **Audit:** logins, failed staff logins, account changes, permission changes and
+  password resets are written to `auditLogs` with scope `security`. Passwords and
+  hashes are never written there.

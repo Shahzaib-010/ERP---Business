@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Bike & Installment Business System
 
-## Getting Started
+A private management app for a motorcycle showroom and an installment-sales business.
+Built with Next.js (App Router, JavaScript) and MongoDB/Mongoose.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Install Node.js 22 or newer.
+2. `npm install`
+3. Copy `.env.example` to `.env.local` and fill in `MONGODB_URI` and `SESSION_SECRET`.
+4. `npm run create-superadmin` creates the first Superadmin. It asks for a name, username
+   and password in the terminal. It runs only once; after that, the Superadmin creates the
+   other staff accounts in the app under **Staff accounts**.
+5. `npm run dev`, then open http://localhost:3000 and log in at `/login`.
+6. Check http://localhost:3000/api/health. It should return `{"status":"ok","database":"ok"}`.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Optional, development only: `npm run seed:dev` adds a demo customer so you can try the
+customer login at `/login/customer` (CNIC `11111-1111111-1`, password `demo-pass-123`).
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Tests
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`npm test` runs the unit tests and the login/permission tests against a temporary
+in-memory MongoDB. The first run downloads a MongoDB binary (about 400 MB, cached in
+`~/.cache/mongodb-binaries`).
 
-## Learn More
+## Docs
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Requirements, architecture and the roadmap are in [`docs/`](docs/). Read
+[`docs/06-decisions.md`](docs/06-decisions.md) for decisions and open questions that
+override the original docs.
