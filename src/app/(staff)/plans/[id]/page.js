@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import {
   AlarmClockIcon,
+  BikeIcon,
   CalendarClockIcon,
   CalendarIcon,
   FileSignatureIcon,
@@ -122,6 +123,11 @@ async function PlanContent({ params }) {
             {plan.previousAccountNumber && <Badge variant="outline">Previous #{plan.previousAccountNumber}</Badge>}
           </div>
           <p className="mt-1 text-lg">{plan.item.description}</p>
+          {plan.bike && (
+            <Link href={`/bikes/${plan.bike.id}`} className="mt-1 inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs hover:bg-muted">
+              <BikeIcon className="size-3.5" /> <span className="font-mono font-semibold">B-{plan.bike.bikeNumber}</span> {plan.bike.label}
+            </Link>
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             {plan.customer && (
               <Link href={`/customers/${plan.customer.id}`} className="inline-flex items-center gap-1.5 font-medium text-foreground hover:underline">

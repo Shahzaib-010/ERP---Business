@@ -2,6 +2,7 @@ import "server-only";
 import { can, requireStaffActor } from "@/server/permissions";
 import { searchCustomers } from "@/server/services/customers";
 import { searchPlans } from "@/server/services/installments";
+import { searchBikes } from "@/server/services/bikes";
 
 // Universal search (doc 01 §C, D-007). Staff only. Each group of results is included only
 // when the actor has that module's view permission, so a User never sees records from a
@@ -16,6 +17,10 @@ export async function universalSearch(actor, rawQuery) {
   const groups = [];
   if (!q) return { q, groups, searchable: searchableTypes(actor) };
 
+  if (can(actor, "bikes.view")) {
+    const bikes = await searchBikes(actor, q, { limit: 8 });
+    if (bikes.length) groups.push({ type: "bikes", label: "Bikes", items: bikes });
+  }
   if (can(actor, "installments.view")) {
     const plans = await searchPlans(actor, q, { limit: 10 });
     if (plans.length) groups.push({ type: "plans", label: "Installment plans", items: plans });
@@ -32,5 +37,6 @@ export function searchableTypes(actor) {
   const out = [];
   if (can(actor, "customers.view")) out.push("customer name, CNIC or phone");
   if (can(actor, "installments.view")) out.push("account number");
+  if (can(actor, "bikes.view")) out.push("registration, engine or chassis number");
   return out;
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { FilePlus2Icon, FileTextIcon, SearchIcon, UserIcon, UserPlusIcon } from "lucide-react";
+import { BikeIcon, FilePlus2Icon, FileTextIcon, PlusIcon, SearchIcon, UserIcon, UserPlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -21,7 +21,7 @@ import { formatPhone } from "@/lib/phone";
 import { ACCOUNT_ITEM, NAV_GROUPS } from "./nav-config";
 
 /** Ctrl+K / ⌘K: jump to a page, run an action or find a record. */
-export function CommandMenu({ allowed, canCreateCustomer, canCreatePlan }) {
+export function CommandMenu({ allowed, canCreateCustomer, canCreatePlan, canCreateBike }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -95,6 +95,20 @@ export function CommandMenu({ allowed, canCreateCustomer, canCreatePlan }) {
           {groups.map((g) =>
             g.items.length ? (
               <CommandGroup key={g.type} heading={g.label}>
+                {g.type === "bikes" &&
+                  g.items.map((bk) => (
+                    <CommandItem key={bk.id} value={`bike ${bk.bikeNumber} ${bk.registrationNumber} ${bk.engineNumber} ${query}`} onSelect={() => go(`/bikes/${bk.id}`)}>
+                      <BikeIcon />
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate">
+                          <span className="font-mono font-semibold">B-{bk.bikeNumber}</span> · {bk.label}
+                        </span>
+                        <span className="truncate font-mono text-xs text-muted-foreground">
+                          {[bk.registrationNumber, bk.engineNumber].filter(Boolean).join(" · ") || (bk.status === "sold" ? "Sold" : "In stock")}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
                 {g.type === "plans" &&
                   g.items.map((pl) => (
                     <CommandItem key={pl.id} value={`plan ${pl.accountNumber} ${query}`} onSelect={() => go(`/plans/${pl.id}`)}>
@@ -139,8 +153,14 @@ export function CommandMenu({ allowed, canCreateCustomer, canCreatePlan }) {
           )}
 
           <CommandSeparator />
-          {(canCreateCustomer || canCreatePlan) && (
+          {(canCreateCustomer || canCreatePlan || canCreateBike) && (
             <CommandGroup heading="Actions">
+              {canCreateBike && (
+                <CommandItem onSelect={() => go("/bikes/new")}>
+                  <PlusIcon />
+                  Add bike purchase
+                </CommandItem>
+              )}
               {canCreatePlan && (
                 <CommandItem onSelect={() => go("/plans/new")}>
                   <FilePlus2Icon />

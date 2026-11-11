@@ -71,7 +71,7 @@ export default function Home() {
       <PublicHeader />
 
       {/* Hero: the bike, centred, with key figures underneath */}
-      <section className="bg-[oklch(0.965_0.002_90)]">
+      <section className="bg-[oklch(0.97_0.004_264)]">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-5 pt-16 pb-20 text-center sm:px-8 sm:pt-20">
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">What makes {BUSINESS.name} special</h1>
           <p className="mt-2 text-sm text-muted-foreground">New and used motorcycles in the Auto Market, Rahim Yar Khan.</p>
@@ -144,7 +144,7 @@ export default function Home() {
       </section>
 
       {/* Visit */}
-      <section id="visit" className="scroll-mt-14 bg-[oklch(0.965_0.002_90)]">
+      <section id="visit" className="scroll-mt-14 bg-[oklch(0.97_0.004_264)]">
         <div className="mx-auto grid w-full max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-2 lg:items-end">
           <div>
             <p lang="ur" dir="rtl" className="text-right text-3xl lg:text-left">

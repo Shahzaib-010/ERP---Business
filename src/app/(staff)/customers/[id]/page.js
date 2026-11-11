@@ -34,6 +34,7 @@ import { can } from "@/server/permissions";
 import { getCustomer } from "@/server/services/customers";
 import { listEntityHistory } from "@/server/services/audit";
 import { listPlansForCustomer } from "@/server/services/installments";
+import { listBikesForCustomer } from "@/server/services/bikes";
 import { PlanProgress, PlanStatusBadge } from "@/components/app/plan-ui";
 import { formatBusinessDate } from "@/lib/business-date";
 import { NotFoundError } from "@/server/errors";
@@ -88,10 +89,13 @@ async function CustomerContent({ params }) {
   const canEdit = can(actor, "customers.edit");
   const canSeeHistory = can(actor, "audit.view");
   const canSeePlans = can(actor, "installments.view");
-  const [history, plans] = await Promise.all([
+  const canSeeBikes = can(actor, "bikes.view");
+  const [history, plans, bikes] = await Promise.all([
     canSeeHistory ? listEntityHistory(actor, { entityType: "customer", entityId: c.id }) : Promise.resolve([]),
     canSeePlans ? listPlansForCustomer(actor, c.id) : Promise.resolve([]),
+    canSeeBikes ? listBikesForCustomer(actor, c.id) : Promise.resolve([]),
   ]);
+  const cashBikes = bikes.filter((b) => b.sale?.mode === "cash");
   const canCreatePlan = can(actor, "installments.create");
   const owed = plans.filter((p) => p.status === "active").reduce((sum, p) => sum + p.balance, 0);
 
@@ -258,6 +262,27 @@ async function CustomerContent({ params }) {
         </TabsContent>
 
         <TabsContent value="plans" className="space-y-4">
+          {cashBikes.length > 0 && (
+            <Card className="gap-0 py-0">
+              <CardHeader className="border-b py-3">
+                <CardTitle className="text-sm">Bikes bought for cash</CardTitle>
+              </CardHeader>
+              <ul className="divide-y">
+                {cashBikes.map((b) => (
+                  <li key={b.id}>
+                    <Link href={`/bikes/${b.id}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-muted/50">
+                      <span className="min-w-0 truncate">
+                        <span className="font-mono font-semibold">B-{b.bikeNumber}</span> · {b.label}
+                      </span>
+                      <span className="shrink-0 text-muted-foreground tabular-nums">
+                        {formatPKR(b.sale.price)} · {formatBusinessDate(b.sale.date)}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
           {canSeePlans && plans.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">

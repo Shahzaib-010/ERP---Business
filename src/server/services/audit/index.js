@@ -87,6 +87,12 @@ async function withActorNames(rows) {
     ? await mongoose.connection.collection("installmentPlans").find({ _id: { $in: planIds.map((id) => new mongoose.Types.ObjectId(id)) } }, { projection: { accountNumber: 1 } }).toArray()
     : [];
   const planLabels = new Map(plans.map((pl) => [String(pl._id), `#${pl.accountNumber}`]));
+  // Bike events are labelled with the stock number ("B-7").
+  const bikeIds = [...new Set(rows.filter((r) => r.entityType === "bike" && r.entityId).map((r) => String(r.entityId)))];
+  const bikes = bikeIds.length
+    ? await mongoose.connection.collection("bikes").find({ _id: { $in: bikeIds.map((id) => new mongoose.Types.ObjectId(id)) } }, { projection: { bikeNumber: 1 } }).toArray()
+    : [];
+  for (const b of bikes) planLabels.set(String(b._id), `B-${b.bikeNumber}`);
   return rows.map((r) => ({
     id: String(r._id),
     action: r.action,

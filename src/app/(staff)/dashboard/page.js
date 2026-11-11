@@ -2,6 +2,10 @@ import Link from "next/link";
 import { Suspense } from "react";
 import {
   AlarmClockIcon,
+  BikeIcon,
+  HandCoinsIcon,
+  PackageIcon,
+  ShoppingBagIcon,
   ArrowRightIcon,
   BanknoteIcon,
   FileTextIcon,
@@ -136,6 +140,29 @@ async function DashboardContent() {
       {stats.length > 0 && (
         <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map(({ key, ...s }) => (
+            <StaggerItem key={key}>
+              <StatCard {...s} />
+            </StaggerItem>
+          ))}
+        </Stagger>
+      )}
+
+      {data.bikes && (
+        <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { key: "stock", label: "Bikes in stock", value: formatNumber(data.bikes.inStock), icon: BikeIcon, href: "/bikes", hint: "Ready to sell" },
+            { key: "value", label: "Stock value", value: formatPKR(data.bikes.stockValue), icon: PackageIcon, tone: "muted", hint: "At purchase price" },
+            {
+              key: "owed",
+              label: "Owed to sellers",
+              value: formatPKR(data.bikes.owedToSellers),
+              icon: HandCoinsIcon,
+              tone: data.bikes.owedToSellers ? "warning" : "muted",
+              href: "/bikes?status=owed",
+              hint: data.bikes.owedBikes ? `On ${data.bikes.owedBikes} ${data.bikes.owedBikes === 1 ? "bike" : "bikes"}` : "All sellers paid",
+            },
+            { key: "sold", label: "Sold this month", value: formatNumber(data.bikes.soldThisMonth), icon: ShoppingBagIcon, tone: "success", href: "/bikes?status=sold", hint: "Cash and installments" },
+          ].map(({ key, ...s }) => (
             <StaggerItem key={key}>
               <StatCard {...s} />
             </StaggerItem>

@@ -1,7 +1,7 @@
 import "server-only";
 import mongoose from "mongoose";
 import { connectDB, withTransaction } from "@/server/db/mongoose";
-import { Counter } from "@/server/models/Counter";
+import { Bike } from "@/server/models/Bike";
 import { Customer } from "@/server/models/Customer";
 import { InstallmentPlan } from "@/server/models/InstallmentPlan";
 import { Payment } from "@/server/models/Payment";
@@ -9,6 +9,7 @@ import { StaffUser } from "@/server/models/StaffUser";
 import { AppError, ConflictError, ForbiddenError, NotFoundError, ValidationError, parseOrThrow } from "@/server/errors";
 import { can, requirePermission, requireStaffActor } from "@/server/permissions";
 import { recordAudit } from "@/server/services/audit";
+import { ACCOUNT, RECEIPT, allocateNumber, bumpNumber, claimReceiptNumber, peekNumber } from "@/server/services/numbering";
 import {
   createPlanSchema,
   discountSchema,
@@ -27,26 +28,8 @@ import { maskCnic } from "@/lib/cnic";
 // cached totals are always recomputed from its posted payments, never patched by hand.
 
 export const PLAN_PAGE_SIZE = 25;
-const ACCOUNT = "accountNumber";
-const RECEIPT = "receiptNumber";
 
 // ---------- numbering ----------
-
-/** Next free number, one above the highest used (paper numbers included). */
-async function peekNumber(name) {
-  const c = await Counter.findById(name).lean();
-  return (c?.seq ?? 0) + 1;
-}
-
-async function allocateNumber(name, session) {
-  const c = await Counter.findOneAndUpdate({ _id: name }, { $inc: { seq: 1 } }, { upsert: true, returnDocument: "after", session });
-  return c.seq;
-}
-
-/** A number typed by hand (e.g. from the paper book) moves the series forward if it is higher. */
-async function bumpNumber(name, n, session) {
-  await Counter.updateOne({ _id: name }, { $max: { seq: n } }, { upsert: true, session });
-}
 
 export async function getNextNumbers(actor) {
   requireStaffActor(actor);
@@ -209,6 +192,16 @@ export async function createPlan(actor, input) {
       const customer = await Customer.findById(data.customerId).session(session);
       if (!customer) throw new ValidationError(undefined, { customerId: "Customer not found." });
 
+      // Selling a bike from the register on installments (Phase 3).
+      let bike = null;
+      if (data.relatedBikeId) {
+        if (!can(actor, "bikes.create")) throw new ForbiddenError("You need permission to record bike sales.");
+        assertObjectId(data.relatedBikeId, "Bike");
+        bike = await Bike.findById(data.relatedBikeId).session(session);
+        if (!bike) throw new ValidationError(undefined, { relatedBikeId: "Bike not found." });
+        if (bike.status !== "in_stock") throw new ValidationError("This bike has already been sold.", { relatedBikeId: "Already sold." });
+      }
+
       let accountNumber = data.accountNumber;
       if (accountNumber) await bumpNumber(ACCOUNT, accountNumber, session);
       else accountNumber = await allocateNumber(ACCOUNT, session);
@@ -230,6 +223,7 @@ export async function createPlan(actor, input) {
             schedule: data.schedule,
             guarantors: guarantorDocs(data.guarantors),
             notes: data.notes,
+            relatedBikeId: bike?._id,
             totals: { cashReceived: 0, discount: 0, balance: data.agreedTotal },
             createdBy: actor.id,
           },
@@ -237,8 +231,32 @@ export async function createPlan(actor, input) {
         { session },
       );
 
+      if (bike) {
+        bike.status = "sold";
+        bike.sale = {
+          mode: "installment",
+          date: data.agreementDate,
+          customerId: customer._id,
+          price: data.agreedTotal,
+          cashPrice: data.cashPrice,
+          planId: plan._id,
+          soldBy: actor.id,
+        };
+        await bike.save({ session });
+        await recordAudit(
+          {
+            actor,
+            action: "bike.sell_installment",
+            entityType: "bike",
+            entityId: bike._id,
+            after: { customer: customer.name, accountNumber: plan.accountNumber, price: data.agreedTotal },
+          },
+          session,
+        );
+      }
+
       if (data.advanceAmount > 0) {
-        if (data.advanceReceiptNumber) await bumpNumber(RECEIPT, data.advanceReceiptNumber, session);
+        if (data.advanceReceiptNumber) await claimReceiptNumber(data.advanceReceiptNumber, session, "advanceReceiptNumber");
         await Payment.create(
           [
             {
@@ -355,9 +373,10 @@ export async function getPlan(actor, id) {
   requirePermission(actor, "installments.view");
   await connectDB();
   const plan = await loadPlan(id);
-  const [customer, payments] = await Promise.all([
+  const [customer, payments, bike] = await Promise.all([
     Customer.findById(plan.customerId).lean(),
     Payment.find({ planId: plan._id }).sort({ paidAt: 1, createdAt: 1 }).lean(),
+    plan.relatedBikeId ? Bike.findById(plan.relatedBikeId).select("bikeNumber make model modelYear color").lean() : null,
   ]);
   const staffIds = [...new Set(payments.flatMap((p) => [p.enteredBy, p.voidedBy]).filter(Boolean).map(String))];
   const staff = staffIds.length ? await StaffUser.find({ _id: { $in: staffIds } }).select("name").lean() : [];
@@ -411,6 +430,9 @@ export async function getPlan(actor, id) {
       phones: g.phones ?? [],
     })),
     notes: plan.notes ?? "",
+    bike: bike
+      ? { id: String(bike._id), bikeNumber: bike.bikeNumber, label: [bike.make, bike.model, bike.modelYear, bike.color].filter(Boolean).join(" ") }
+      : null,
     progress,
     ledger,
     completedAt: plan.completedAt ?? null,
@@ -437,7 +459,7 @@ export async function recordPayment(actor, planId, input) {
           amount: `More than the remaining balance (Rs ${plan.totals.balance.toLocaleString("en-PK")}).`,
         });
       }
-      if (data.receiptNumber) await bumpNumber(RECEIPT, data.receiptNumber, session);
+      if (data.receiptNumber) await claimReceiptNumber(data.receiptNumber, session);
       const [payment] = await Payment.create(
         [
           {

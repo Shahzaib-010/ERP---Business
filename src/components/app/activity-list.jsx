@@ -26,6 +26,7 @@ function show(v) {
 function entityHref(e) {
   if (e.entityType === "customer" && e.entityId) return `/customers/${e.entityId}`;
   if (e.entityType === "installmentPlan" && e.entityId) return `/plans/${e.entityId}`;
+  if (e.entityType === "bike" && e.entityId) return `/bikes/${e.entityId}`;
   return null;
 }
 
@@ -54,11 +55,11 @@ export function ActivityList({ events, showEntity = false, showChanges = false, 
             <span className="absolute top-1.5 -left-[25px] size-2.5 rounded-full border-2 border-background bg-primary ring-2 ring-primary/20" />
             <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
               <span className="font-medium">{auditActionLabel(e.action)}</span>
-              {showEntity && (e.entityName || e.entityType === "installmentPlan") && (
+              {showEntity && (e.entityName || e.entityType === "installmentPlan" || e.entityType === "bike") && (
                 <>
                   {href ? (
                     <Link href={href} className="text-primary hover:underline">
-                      {e.entityName ?? "plan"}
+                      {e.entityName ?? (e.entityType === "bike" ? "bike" : "plan")}
                     </Link>
                   ) : (
                     <span>{e.entityName}</span>

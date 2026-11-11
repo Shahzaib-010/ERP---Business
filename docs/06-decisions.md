@@ -236,3 +236,28 @@ Supersedes D-006 answers 2 and 8.
 - **Customer portal** shows the signed-in customer's own plans, payments and what is due.
 - Cash-book entries (`financialTransactions`) for these payments come with Phase 5, built
   from the payment rows so nothing is counted twice.
+
+## D-013 — Palette revision and Phase 3 bike register — Decided (2026-11-11)
+
+**Palette** (supersedes the colours in D-010 and D-011): back to the original cool white and
+grey neutrals. The bright royal blue is replaced by a **deep midnight navy** primary. A
+**neon lime** (`--brand`) is used only in small accents: the active sidebar item's edge,
+the logo mark, "in stock" dots, text selection and the landing page's dark sections.
+
+**Bike register** (fields from D-009):
+- One `bikes` document per motorcycle with a stock number (B-1, B-2, …), its details, and the
+  purchase (seller snapshot, date, price) and sale (customer, mode, price) kept on it.
+  This replaces the separate `bikePurchases` / `bikeSales` collections in doc 03; the data is
+  the same and one document keeps the bike's status and sale consistent.
+- Payments to the seller are rows in `sellerPayments`; "owed to seller" is the purchase
+  price minus posted rows. Rows are voided with a reason, never deleted.
+- Registration, engine and chassis numbers are optional but unique (compared without
+  spaces or dashes).
+- A bike is sold **for cash** (price and receipt number on the bike) or **on installments**:
+  the plan form opens with the bike attached, and creating the plan marks the bike sold.
+  The sale value is recorded once; later installments only reduce the plan balance.
+- A cash sale entered by mistake can be cancelled (needs `bikes.edit` and `payments.edit`);
+  the bike returns to stock and the sale stays in the audit history. Installment sales are
+  corrected on the plan.
+- Receipt numbers are one series shared by plan payments and cash bike sales.
+- Bike photos: optional; the upload arrives with private file storage (Phase 6).

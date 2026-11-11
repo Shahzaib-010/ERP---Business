@@ -1,4 +1,5 @@
 import {
+  BikeIcon,
   FileTextIcon,
   LayoutDashboardIcon,
   SearchIcon,
@@ -17,6 +18,10 @@ export const NAV_GROUPS = [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
       { href: "/search", label: "Search", icon: SearchIcon },
     ],
+  },
+  {
+    label: "Showroom",
+    items: [{ href: "/bikes", label: "Bikes", icon: BikeIcon, permission: "bikes.view" }],
   },
   {
     label: "Sales",
@@ -38,6 +43,7 @@ export const SEGMENT_LABELS = {
   dashboard: "Dashboard",
   customers: "Customers",
   plans: "Installment plans",
+  bikes: "Bikes",
   users: "Staff accounts",
   account: "My account",
   search: "Search",

@@ -20,6 +20,7 @@ export const config = {
     "/dashboard/:path*",
     "/customers/:path*",
     "/plans/:path*",
+    "/bikes/:path*",
     "/search",
     "/users/:path*",
     "/account/:path*",

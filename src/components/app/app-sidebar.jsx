@@ -41,7 +41,7 @@ export function AppSidebar({ allowed, user, business }) {
             <SidebarMenuButton size="lg" asChild tooltip={business.name}>
               <Link href="/dashboard" onClick={closeOnMobile}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
-                  <BikeIcon className="size-4" />
+                  <BikeIcon className="size-4 text-brand dark:text-sidebar-primary-foreground" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{business.name}</span>
@@ -62,7 +62,12 @@ export function AppSidebar({ allowed, user, business }) {
                 const active = isActivePath(pathname, item.href);
                 return (
                   <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      tooltip={item.label}
+                      className="relative data-[active=true]:before:absolute data-[active=true]:before:inset-y-1.5 data-[active=true]:before:left-0 data-[active=true]:before:w-[3px] data-[active=true]:before:rounded-full data-[active=true]:before:bg-brand data-[active=true]:before:shadow-[0_0_8px_var(--brand)]"
+                    >
                       <Link href={item.href} onClick={closeOnMobile} aria-current={active ? "page" : undefined}>
                         <item.icon />
                         <span>{item.label}</span>

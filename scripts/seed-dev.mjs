@@ -16,6 +16,19 @@ import { createCustomer } from "@/server/services/customers";
 import { setCustomerPortalPassword } from "@/server/services/customers/portal-access";
 import { InstallmentPlan } from "@/server/models/InstallmentPlan";
 import { applyDiscount, createPlan, recordPayment } from "@/server/services/installments";
+import { Bike } from "@/server/models/Bike";
+import { createBikePurchase, sellBikeForCash } from "@/server/services/bikes";
+
+// Dummy bikes: some in stock, one still owed to the seller, one sold for cash, one sold on
+// installments. Engine numbers start with "DEMO" so they are easy to spot and remove later.
+const DUMMY_BIKES = [
+  { make: "Honda", model: "CD70", modelYear: "2026", color: "Red", condition: "new", engineNumber: "DEMO-E1001", chassisNumber: "DEMO-C1001", sellerName: "Atlas Autos (dealer)", sellerPhone: "0300-5550001", purchaseDate: "2026-10-02", purchasePrice: "152000", paidNow: "152000" },
+  { make: "Honda", model: "CD70", modelYear: "2026", color: "Black", condition: "new", engineNumber: "DEMO-E1002", chassisNumber: "DEMO-C1002", sellerName: "Atlas Autos (dealer)", sellerPhone: "0300-5550001", purchaseDate: "2026-10-02", purchasePrice: "152000", paidNow: "100000" },
+  { make: "Yamaha", model: "YB125Z", modelYear: "2025", color: "Blue", condition: "used", registrationNumber: "RYK-2245", engineNumber: "DEMO-E2001", sellerName: "Imran Saeed", sellerPhone: "0301-5550002", purchaseDate: "2026-10-20", purchasePrice: "210000", paidNow: "150000" },
+  { make: "Suzuki", model: "GD110S", modelYear: "2024", color: "Grey", condition: "used", registrationNumber: "RYK-1180", engineNumber: "DEMO-E3001", sellerName: "Tariq Motors", purchaseDate: "2026-09-15", purchasePrice: "165000", paidNow: "165000", sell: { customerCnic: "99999-0000004-7", saleDate: "2026-10-05", salePrice: "182000" } },
+  { make: "Honda", model: "CG125", modelYear: "2026", color: "Red", condition: "new", engineNumber: "DEMO-E4001", sellerName: "Atlas Autos (dealer)", purchaseDate: "2026-10-25", purchasePrice: "235000", paidNow: "235000", installment: { customerCnic: "99999-0000005-9", agreementDate: "2026-11-01", cashPrice: "255000", agreedTotal: "320000", advanceAmount: "80000", installmentAmount: "20000", dueDayOfMonth: "5", firstDueDate: "2026-12-05" } },
+  { make: "United", model: "US70", modelYear: "2026", color: "Black", condition: "new", engineNumber: "DEMO-E5001", sellerName: "United Dealer RYK", purchaseDate: "2026-11-03", purchasePrice: "118000", paidNow: "60000" },
+];
 
 // Dummy plans modelled on the two paper cards (amounts and schedules), with made-up people.
 const DUMMY_PLANS = [
@@ -130,6 +143,37 @@ async function main() {
     plansAdded += 1;
   }
   console.log(`Dummy plans: ${plansAdded} added.`);
+
+  let bikesAdded = 0;
+  for (const { sell, installment, ...purchase } of DUMMY_BIKES) {
+    const key = purchase.engineNumber.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (await Bike.exists({ "keys.engine": key })) continue;
+    const { id } = await createBikePurchase(actor, purchase);
+    if (sell) {
+      const c = await Customer.findOne({ cnicNormalized: sell.customerCnic.replace(/\D/g, "") }).select("_id").lean();
+      if (c) await sellBikeForCash(actor, id, { customerId: String(c._id), saleDate: sell.saleDate, salePrice: sell.salePrice });
+    }
+    if (installment) {
+      const c = await Customer.findOne({ cnicNormalized: installment.customerCnic.replace(/\D/g, "") }).select("_id").lean();
+      if (c) {
+        await createPlan(actor, {
+          customerId: String(c._id),
+          relatedBikeId: id,
+          agreementDate: installment.agreementDate,
+          itemKind: "bike",
+          itemDescription: `${purchase.make} ${purchase.model}, ${purchase.color}, ${purchase.condition}`,
+          itemModel: purchase.modelYear,
+          itemSerial: purchase.engineNumber,
+          cashPrice: installment.cashPrice,
+          agreedTotal: installment.agreedTotal,
+          advanceAmount: installment.advanceAmount,
+          schedule: { frequency: "monthly", dueDayOfMonth: installment.dueDayOfMonth, installmentAmount: installment.installmentAmount, firstDueDate: installment.firstDueDate },
+        });
+      }
+    }
+    bikesAdded += 1;
+  }
+  console.log(`Dummy bikes: ${bikesAdded} added.`);
 
   const demo = await Customer.findOne({ cnicNormalized: "1111111111111" }).select("_id").lean();
   await setCustomerPortalPassword(actor, String(demo._id), { password: "demo-pass-123" });

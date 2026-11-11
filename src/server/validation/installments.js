@@ -141,6 +141,10 @@ export const scheduleSchema = z
 export const createPlanSchema = z
   .object({
     customerId: z.string({ error: "Choose the customer." }).min(1, "Choose the customer."),
+    relatedBikeId: z
+      .string()
+      .optional()
+      .transform((s) => (s ? s : undefined)),
     accountNumber: optionalInt(1, 9_999_999, "A whole number above 0."),
     previousAccountNumber: optionalInt(1, 9_999_999, "A whole number above 0."),
     agreementDate: businessDate("agreement date"),

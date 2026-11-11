@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarClockIcon, FilePlus2Icon, HashIcon, PackageIcon, UserRoundCheckIcon, UserIcon, WalletIcon } from "lucide-react";
+import { BikeIcon, CalendarClockIcon, FilePlus2Icon, HashIcon, PackageIcon, UserRoundCheckIcon, UserIcon, WalletIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -32,7 +32,7 @@ function Section({ icon: Icon, title, description, children }) {
 
 const FREQ_OPTIONS = Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({ value, label }));
 
-export function PlanForm({ action, initialCustomer, nextNumbers }) {
+export function PlanForm({ action, initialCustomer, nextNumbers, bike }) {
   const [state, formAction] = useActionState(action, null);
   // Remount after a failed submit so every field shows what was sent back.
   const key = state?.values ? JSON.stringify(state.values) : "initial";
@@ -41,14 +41,15 @@ export function PlanForm({ action, initialCustomer, nextNumbers }) {
       key={key}
       formAction={formAction}
       state={state}
-      values={state?.values ?? {}}
+      values={state?.values ?? (bike ? { itemKind: "bike", itemDescription: bike.description, itemModel: bike.modelYear ? String(bike.modelYear) : "", itemSerial: bike.serial } : {})}
+      bike={bike}
       initialCustomer={initialCustomer}
       nextNumbers={nextNumbers}
     />
   );
 }
 
-function PlanFormInner({ formAction, state, values, initialCustomer, nextNumbers }) {
+function PlanFormInner({ formAction, state, values, initialCustomer, nextNumbers, bike }) {
   const errors = state?.fieldErrors ?? {};
   const s0 = values.schedule ?? {};
 
@@ -145,7 +146,22 @@ function PlanFormInner({ formAction, state, values, initialCustomer, nextNumbers
         </div>
       </Section>
 
-      <Section icon={PackageIcon} title="Item">
+      <Section icon={PackageIcon} title="Item" description={bike ? "Filled in from the bike register. The bike is marked sold when the plan is created." : undefined}>
+        {bike && (
+          <div className="mb-5 flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
+            <input type="hidden" name="relatedBikeId" value={bike.id} />
+            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <BikeIcon className="size-4 text-brand" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate font-medium">
+                <span className="font-mono">B-{bike.bikeNumber}</span> · {bike.label}
+              </p>
+              <p className="text-xs text-muted-foreground">Selling this bike on installments</p>
+            </div>
+          </div>
+        )}
+        {errors.relatedBikeId && <p className="mb-4 text-sm text-destructive">{errors.relatedBikeId}</p>}
         <ItemFields values={values} errors={errors} />
       </Section>
 

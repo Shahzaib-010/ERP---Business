@@ -1,8 +1,9 @@
 import Link from "next/link";
 import Form from "next/form";
 import { Suspense } from "react";
-import { ArrowRightIcon, FileTextIcon, SearchIcon, SearchXIcon, UsersIcon } from "lucide-react";
+import { ArrowRightIcon, BikeIcon, FileTextIcon, SearchIcon, SearchXIcon, UsersIcon } from "lucide-react";
 import { PlanStatusBadge } from "@/components/app/plan-ui";
+import { BikeStatusBadge } from "@/components/app/bike-ui";
 import { formatPKR } from "@/lib/format";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,7 @@ import { formatPhone } from "@/lib/phone";
 
 export const metadata = { title: "Search" };
 
-const GROUP_ICONS = { customers: UsersIcon, plans: FileTextIcon };
+const GROUP_ICONS = { customers: UsersIcon, plans: FileTextIcon, bikes: BikeIcon };
 const RESULT_LIMIT = 20;
 
 export default function SearchPage({ searchParams }) {
@@ -117,6 +118,19 @@ async function SearchContent({ searchParams }) {
                 )}
               </CardHeader>
               <ul className="divide-y">
+                {g.type === "bikes" &&
+                  g.items.map((bk) => (
+                    <li key={bk.id}>
+                      <Link href={`/bikes/${bk.id}`} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50">
+                        <span className="w-16 shrink-0 font-mono text-sm font-semibold">B-{bk.bikeNumber}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium group-hover:underline">{bk.label}</p>
+                          <p className="truncate font-mono text-xs text-muted-foreground">{[bk.registrationNumber, bk.engineNumber].filter(Boolean).join(" · ") || "—"}</p>
+                        </div>
+                        <BikeStatusBadge status={bk.status} />
+                      </Link>
+                    </li>
+                  ))}
                 {g.type === "plans" &&
                   g.items.map((pl) => (
                     <li key={pl.id}>

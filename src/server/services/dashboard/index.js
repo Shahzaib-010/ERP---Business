@@ -6,6 +6,7 @@ import { can, requireStaffActor } from "@/server/permissions";
 import { listRecentActivity } from "@/server/services/audit";
 import { toListItem } from "@/server/services/customers";
 import { getInstallmentOverview } from "@/server/services/installments";
+import { getBikeOverview } from "@/server/services/bikes";
 
 // Dashboard figures. Each section is included only when the actor may see that module.
 // Showroom sales and the cash book are added with Phases 3 and 5.
@@ -19,7 +20,7 @@ function startOfMonthPk(now = new Date(), monthsBack = 0) {
 export async function getDashboardOverview(actor) {
   requireStaffActor(actor);
   await connectDB();
-  const out = { customers: null, staff: null, activity: null, installments: null };
+  const out = { customers: null, staff: null, activity: null, installments: null, bikes: null };
 
   if (can(actor, "customers.view")) {
     const thisMonth = startOfMonthPk();
@@ -40,6 +41,10 @@ export async function getDashboardOverview(actor) {
       StaffUser.countDocuments({ isActive: false }),
     ]);
     out.staff = { active, disabled };
+  }
+
+  if (can(actor, "bikes.view")) {
+    out.bikes = await getBikeOverview(actor);
   }
 
   if (can(actor, "installments.view")) {
