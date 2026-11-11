@@ -1,5 +1,5 @@
-// Development only: adds dummy customers so the screens can be tried before the paper
-// records are entered (D-006 answer 3). One of them has a portal login.
+// Development only: adds dummy customers and installment plans so the screens can be tried
+// before the paper records are entered (D-006 answer 3). One customer has a portal login.
 //
 //   npm run seed:dev
 //
@@ -14,6 +14,77 @@ import { Customer } from "@/server/models/Customer";
 import { StaffUser } from "@/server/models/StaffUser";
 import { createCustomer } from "@/server/services/customers";
 import { setCustomerPortalPassword } from "@/server/services/customers/portal-access";
+import { InstallmentPlan } from "@/server/models/InstallmentPlan";
+import { applyDiscount, createPlan, recordPayment } from "@/server/services/installments";
+
+// Dummy plans modelled on the two paper cards (amounts and schedules), with made-up people.
+const DUMMY_PLANS = [
+  {
+    customerCnic: "11111-1111111-1",
+    plan: {
+      accountNumber: "1315",
+      agreementDate: "2026-09-01",
+      itemKind: "bike",
+      itemDescription: "CD70 Dream, red, new",
+      itemModel: "2026",
+      itemSerial: "BJJ-4802",
+      cashPrice: "155000",
+      agreedTotal: "200000",
+      advanceAmount: "70000",
+      advanceReceiptNumber: "2432",
+      schedule: { frequency: "monthly", dueDayOfMonth: "10", installmentAmount: "11000", firstDueDate: "2026-10-10" },
+      guarantors: [{ name: "Demo Guarantor", fatherName: "Demo Father", phone: "0300-1112223", profession: "Shopkeeper" }],
+    },
+    payments: [{ amount: "11000", paidAt: "2026-10-09", receiptNumber: "2440" }],
+  },
+  {
+    customerCnic: "99999-0000002-3",
+    plan: {
+      accountNumber: "1231",
+      agreementDate: "2025-06-30",
+      itemKind: "bike",
+      itemDescription: "125, black, used",
+      itemModel: "2025",
+      cashPrice: "228000",
+      agreedTotal: "297000",
+      advanceAmount: "100000",
+      schedule: { frequency: "monthly", dueDayOfMonth: "1", installmentAmount: "16000", firstDueDate: "2025-08-01" },
+      notes: "Due on the 1st, from August.",
+    },
+    payments: ["2025-08-02", "2025-09-02", "2025-10-01", "2025-10-29", "2025-12-01", "2026-01-04", "2026-02-01", "2026-03-02", "2026-04-04", "2026-04-29", "2026-05-31"]
+      .map((d) => ({ amount: "16000", paidAt: d }))
+      .concat([{ amount: "20000", paidAt: "2026-06-29" }]),
+    discount: { reason: "Last 1,000 waived (as on the paper card).", paidAt: "2026-06-29" },
+  },
+  {
+    customerCnic: "99999-0000001-1",
+    plan: {
+      agreementDate: "2026-06-15",
+      itemKind: "mobile",
+      itemDescription: "Smartphone, 128 GB",
+      agreedTotal: "60000",
+      advanceAmount: "10000",
+      schedule: { frequency: "monthly", dueDayOfMonth: "5", installmentAmount: "5000", firstDueDate: "2026-07-05" },
+    },
+    payments: [
+      { amount: "5000", paidAt: "2026-07-04" },
+      { amount: "5000", paidAt: "2026-08-06" },
+      { amount: "3000", paidAt: "2026-09-10" },
+    ],
+  },
+  {
+    customerCnic: "99999-0000003-5",
+    plan: {
+      agreementDate: "2026-09-24",
+      itemKind: "appliance",
+      itemDescription: "Refrigerator, 14 cu ft",
+      agreedTotal: "45000",
+      advanceAmount: "0",
+      schedule: { frequency: "weekly", installmentAmount: "3000", firstDueDate: "2026-10-01" },
+    },
+    payments: ["2026-10-01", "2026-10-08", "2026-10-15", "2026-10-22", "2026-10-29", "2026-11-05"].map((d) => ({ amount: "3000", paidAt: d })),
+  },
+];
 
 const DUMMY_CUSTOMERS = [
   { name: "Demo Customer", cnic: "11111-1111111-1", phones: ["0300-0000000"], fatherOrHusbandName: "Demo Father", profession: "Shopkeeper", homeAddress: "Demo Street, Rahim Yar Khan" },
@@ -46,6 +117,19 @@ async function main() {
     added += 1;
   }
   console.log(`Dummy customers: ${added} added, ${DUMMY_CUSTOMERS.length - added} already there.`);
+
+  let plansAdded = 0;
+  for (const d of DUMMY_PLANS) {
+    const customer = await Customer.findOne({ cnicNormalized: d.customerCnic.replace(/\D/g, "") }).select("_id").lean();
+    if (!customer) continue;
+    if (d.plan.accountNumber && (await InstallmentPlan.exists({ accountNumber: Number(d.plan.accountNumber) }))) continue;
+    if (!d.plan.accountNumber && (await InstallmentPlan.exists({ customerId: customer._id, "item.description": d.plan.itemDescription }))) continue;
+    const { id } = await createPlan(actor, { ...d.plan, customerId: String(customer._id) });
+    for (const pay of d.payments ?? []) await recordPayment(actor, id, pay);
+    if (d.discount) await applyDiscount(actor, id, d.discount);
+    plansAdded += 1;
+  }
+  console.log(`Dummy plans: ${plansAdded} added.`);
 
   const demo = await Customer.findOne({ cnicNormalized: "1111111111111" }).select("_id").lean();
   await setCustomerPortalPassword(actor, String(demo._id), { password: "demo-pass-123" });

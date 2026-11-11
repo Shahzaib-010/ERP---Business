@@ -3,7 +3,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AppBreadcrumbs } from "./breadcrumbs";
 import { CommandMenu } from "./command-menu";
 
-export function SiteHeader({ allowed, canCreateCustomer }) {
+export function SiteHeader({ allowed, canCreateCustomer, canCreatePlan }) {
   return (
     <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 rounded-t-xl border-b bg-background/80 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:px-4">
       <SidebarTrigger className="-ml-1" />
@@ -12,7 +12,7 @@ export function SiteHeader({ allowed, canCreateCustomer }) {
         <AppBreadcrumbs />
       </div>
       <div className="w-auto shrink-0 sm:w-auto">
-        <CommandMenu allowed={allowed} canCreateCustomer={canCreateCustomer} />
+        <CommandMenu allowed={allowed} canCreateCustomer={canCreateCustomer} canCreatePlan={canCreatePlan} />
       </div>
     </header>
   );

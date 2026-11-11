@@ -69,7 +69,11 @@ export async function listEntityHistory(actor, { entityType, entityId, limit = 5
 export async function listRecentActivity(actor, { limit = 8 } = {}) {
   requirePermission(actor, "audit.view");
   await connectDB();
-  const rows = await AuditLog.find({ scope: "operational" }).sort({ createdAt: -1, _id: -1 }).limit(limit).lean();
+  // A new plan is also noted in the customer's own history; show it once here.
+  const rows = await AuditLog.find({ scope: "operational", $nor: [{ entityType: "customer", action: "plan.create" }] })
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limit)
+    .lean();
   return withActorNames(rows);
 }
 
@@ -77,6 +81,12 @@ async function withActorNames(rows) {
   const ids = [...new Set(rows.filter((r) => r.actorKind === "staff" && r.actorId).map((r) => String(r.actorId)))];
   const staff = ids.length ? await StaffUser.find({ _id: { $in: ids } }).select("name").lean() : [];
   const names = new Map(staff.map((s) => [String(s._id), s.name]));
+  // Plan events are labelled with the account number ("#1315").
+  const planIds = [...new Set(rows.filter((r) => r.entityType === "installmentPlan" && r.entityId).map((r) => String(r.entityId)))];
+  const plans = planIds.length
+    ? await mongoose.connection.collection("installmentPlans").find({ _id: { $in: planIds.map((id) => new mongoose.Types.ObjectId(id)) } }, { projection: { accountNumber: 1 } }).toArray()
+    : [];
+  const planLabels = new Map(plans.map((pl) => [String(pl._id), `#${pl.accountNumber}`]));
   return rows.map((r) => ({
     id: String(r._id),
     action: r.action,
@@ -85,7 +95,7 @@ async function withActorNames(rows) {
     actorName: r.actorKind === "system" ? "System" : (names.get(String(r.actorId)) ?? "Unknown"),
     createdAt: r.createdAt,
     changes: diffSnapshots(r.before, r.after),
-    entityName: r.after?.name ?? r.before?.name ?? null,
+    entityName: r.after?.name ?? r.before?.name ?? planLabels.get(String(r.entityId)) ?? null,
     reason: r.reason ?? null,
   }));
 }

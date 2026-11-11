@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import {
+  AlarmClockIcon,
   ArrowRightIcon,
+  BanknoteIcon,
+  FileTextIcon,
+  WalletIcon,
   CalendarIcon,
   KeyRoundIcon,
   SearchIcon,
@@ -22,7 +26,8 @@ import { StatCard } from "@/components/app/stat-card";
 import { requireStaffPage } from "@/server/auth/current";
 import { can } from "@/server/permissions";
 import { getDashboardOverview } from "@/server/services/dashboard";
-import { formatNumber, formatRelative, initials } from "@/lib/format";
+import { formatNumber, formatPKR, formatRelative, initials } from "@/lib/format";
+import { PlanStatusBadge } from "@/components/app/plan-ui";
 import { formatPhone } from "@/lib/phone";
 
 export const metadata = { title: "Dashboard" };
@@ -54,7 +59,17 @@ async function DashboardContent() {
   const canCreate = can(actor, "customers.create");
 
   const stats = [];
-  if (data.customers) {
+  const inst = data.installments;
+  if (inst) {
+    stats.push(
+      { key: "outstanding", label: "Outstanding balance", value: formatPKR(inst.outstanding), icon: WalletIcon, href: "/plans?status=active", hint: `${formatNumber(inst.activeCount)} active ${inst.activeCount === 1 ? "plan" : "plans"}` },
+      { key: "collected", label: "Collected this month", value: formatPKR(inst.collectedThisMonth), icon: BanknoteIcon, tone: "success", hint: `${formatNumber(inst.paymentsThisMonth)} ${inst.paymentsThisMonth === 1 ? "payment" : "payments"}` },
+      { key: "late", label: "Late plans", value: formatNumber(inst.lateCount), icon: AlarmClockIcon, tone: inst.lateCount ? "warning" : "muted", href: "/plans?status=late", hint: inst.lateCount ? `${formatPKR(inst.lateAmount)} overdue` : "Everyone is up to date" },
+    );
+    if (data.customers) {
+      stats.push({ key: "total", label: "Customers", value: formatNumber(data.customers.total), icon: UsersIcon, href: "/customers", hint: `+${formatNumber(data.customers.addedThisMonth)} this month` });
+    }
+  } else if (data.customers) {
     const { total, addedThisMonth, addedLastMonth, portalEnabled } = data.customers;
     const delta = addedThisMonth - addedLastMonth;
     stats.push(
@@ -71,7 +86,7 @@ async function DashboardContent() {
       { key: "portal", label: "Portal logins on", value: formatNumber(portalEnabled), icon: KeyRoundIcon, tone: "warning", hint: "Customers who can sign in" },
     );
   }
-  if (data.staff) {
+  if (data.staff && !inst) {
     stats.push({
       key: "staff",
       label: "Active staff",
@@ -100,6 +115,13 @@ async function DashboardContent() {
                 <SearchIcon /> Search
               </Link>
             </Button>
+            {inst && can(actor, "installments.create") && (
+              <Button variant="outline" asChild>
+                <Link href="/plans/new">
+                  <FileTextIcon /> New plan
+                </Link>
+              </Button>
+            )}
             {canCreate && (
               <Button asChild>
                 <Link href="/customers/new">
@@ -119,6 +141,42 @@ async function DashboardContent() {
             </StaggerItem>
           ))}
         </Stagger>
+      )}
+
+      {inst && inst.mostLate.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Needs attention</CardTitle>
+            <CardDescription>The plans that are furthest behind.</CardDescription>
+            <CardAction>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/plans?status=late">
+                  All late plans <ArrowRightIcon />
+                </Link>
+              </Button>
+            </CardAction>
+          </CardHeader>
+          <CardContent>
+            <ul className="-mx-2 divide-y">
+              {inst.mostLate.map((p) => (
+                <li key={p.id}>
+                  <Link href={`/plans/${p.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/60">
+                    <span className="w-16 shrink-0 font-mono text-sm font-semibold">#{p.accountNumber}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{p.customer?.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">{p.item.description}</p>
+                    </div>
+                    <div className="hidden text-right sm:block">
+                      <p className="text-sm font-medium tabular-nums text-destructive">{formatPKR(p.overdue.amount)}</p>
+                      <p className="text-xs text-muted-foreground">overdue</p>
+                    </div>
+                    <PlanStatusBadge status={p.status} overdue={p.overdue} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid gap-6 lg:grid-cols-5">

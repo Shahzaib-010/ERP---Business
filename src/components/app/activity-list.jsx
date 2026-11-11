@@ -3,16 +3,29 @@ import { HistoryIcon } from "lucide-react";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { AUDIT_FIELD_LABELS, auditActionLabel } from "@/lib/audit-labels";
 import { formatDateTime, formatRelative } from "@/lib/format";
+import { formatBusinessDate } from "@/lib/business-date";
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}T00:00:00(\.000)?Z$/;
 
 function show(v) {
   if (v === null || v === undefined || v === "") return "—";
-  if (Array.isArray(v)) return v.length ? v.join(", ") : "—";
+  if (v instanceof Date) v = v.toISOString();
+  if (typeof v === "string" && ISO_DAY.test(v)) return formatBusinessDate(v);
+  if (Array.isArray(v)) return v.length ? v.map(show).join(", ") : "—";
   if (typeof v === "boolean") return v ? "Yes" : "No";
+  if (typeof v === "number") return v.toLocaleString("en-PK");
+  if (typeof v === "object") {
+    const parts = Object.entries(v)
+      .filter(([, x]) => x !== null && x !== undefined && x !== "")
+      .map(([k, x]) => `${AUDIT_FIELD_LABELS[k] ?? k.replace(/([A-Z])/g, " $1").toLowerCase()}: ${show(x)}`);
+    return parts.length ? parts.join(" · ") : "—";
+  }
   return String(v);
 }
 
 function entityHref(e) {
   if (e.entityType === "customer" && e.entityId) return `/customers/${e.entityId}`;
+  if (e.entityType === "installmentPlan" && e.entityId) return `/plans/${e.entityId}`;
   return null;
 }
 
@@ -41,11 +54,11 @@ export function ActivityList({ events, showEntity = false, showChanges = false, 
             <span className="absolute top-1.5 -left-[25px] size-2.5 rounded-full border-2 border-background bg-primary ring-2 ring-primary/20" />
             <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
               <span className="font-medium">{auditActionLabel(e.action)}</span>
-              {showEntity && e.entityName && (
+              {showEntity && (e.entityName || e.entityType === "installmentPlan") && (
                 <>
                   {href ? (
                     <Link href={href} className="text-primary hover:underline">
-                      {e.entityName}
+                      {e.entityName ?? "plan"}
                     </Link>
                   ) : (
                     <span>{e.entityName}</span>

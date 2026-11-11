@@ -211,3 +211,28 @@ Supersedes D-006 answers 2 and 8.
 - Colours (supersedes the blue in D-010): warm stone neutrals, charcoal for primary
   actions, **yellow `--brand` accent** used mainly on dark surfaces. Condensed display
   font (Barlow Condensed) for figures and section titles.
+
+## D-012 — Phase 4 installment design — Decided (2026-11-11)
+
+- **Plans** (`installmentPlans`) are for any item. `terms` holds the original agreement and
+  is never changed; `schedule` is the current schedule and may be changed (audited).
+- **Business dates** (agreement, due and payment dates) are calendar days stored at
+  00:00 UTC; "today" is the Pakistan date (`src/lib/business-date.js`).
+- **Schedule engine** (`src/lib/installment-schedule.js`, shared with the forms): the advance
+  is due on the agreement date; the first installment on the first due date entered, later
+  ones on the due day (monthly; 31 = last day of short months), or every 7 / 1 / N days.
+  Payments count towards installments in order, so extra payments move ahead and short ones
+  carry forward. Late = the day after a due date with an uncovered amount; "days late" is
+  counted from the oldest uncovered installment (D-006 Q4).
+- **Payments** (`payments`): one row per payment, kinds `advance`, `installment`, `discount`.
+  Never more than the balance. Never edited or deleted: a wrong one is **voided** with a
+  reason (`payments.edit`) and stays visible. Plan totals are recomputed from posted rows.
+- **Discount** (D-008): Superadmin-only permission `installments.discount`; closes the whole
+  remaining balance, needs a reason, counts as settled but not as cash.
+- **Numbers**: account and receipt numbers can be typed from the paper records; a counter
+  keeps the highest number used, and an empty account number takes the next one. A receipt
+  number belongs to one posted payment. Old payments may have no receipt number.
+- **Guarantors** are stored on the plan (zero or more). Their CNIC is optional and shown masked.
+- **Customer portal** shows the signed-in customer's own plans, payments and what is due.
+- Cash-book entries (`financialTransactions`) for these payments come with Phase 5, built
+  from the payment rows so nothing is counted twice.

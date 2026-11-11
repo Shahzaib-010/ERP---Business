@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import {
   BriefcaseIcon,
+  FilePlus2Icon,
   CalendarIcon,
   FileTextIcon,
   HistoryIcon,
@@ -32,8 +33,11 @@ import { requireStaffPage } from "@/server/auth/current";
 import { can } from "@/server/permissions";
 import { getCustomer } from "@/server/services/customers";
 import { listEntityHistory } from "@/server/services/audit";
+import { listPlansForCustomer } from "@/server/services/installments";
+import { PlanProgress, PlanStatusBadge } from "@/components/app/plan-ui";
+import { formatBusinessDate } from "@/lib/business-date";
 import { NotFoundError } from "@/server/errors";
-import { formatDate, formatDateTime, initials } from "@/lib/format";
+import { formatDate, formatDateTime, formatPKR, initials } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { disablePortalAction, setPortalPasswordAction } from "../actions";
 import { PortalAccess } from "./portal-access";
@@ -83,7 +87,13 @@ async function CustomerContent({ params }) {
   }
   const canEdit = can(actor, "customers.edit");
   const canSeeHistory = can(actor, "audit.view");
-  const history = canSeeHistory ? await listEntityHistory(actor, { entityType: "customer", entityId: c.id }) : [];
+  const canSeePlans = can(actor, "installments.view");
+  const [history, plans] = await Promise.all([
+    canSeeHistory ? listEntityHistory(actor, { entityType: "customer", entityId: c.id }) : Promise.resolve([]),
+    canSeePlans ? listPlansForCustomer(actor, c.id) : Promise.resolve([]),
+  ]);
+  const canCreatePlan = can(actor, "installments.create");
+  const owed = plans.filter((p) => p.status === "active").reduce((sum, p) => sum + p.balance, 0);
 
   return (
     <PageBody>
@@ -126,6 +136,13 @@ async function CustomerContent({ params }) {
                 </a>
               </Button>
             )}
+            {canSeePlans && canCreatePlan && (
+              <Button variant="outline" asChild>
+                <Link href={`/plans/new?customerId=${c.id}`}>
+                  <FilePlus2Icon /> New plan
+                </Link>
+              </Button>
+            )}
             {canEdit && (
               <Button asChild>
                 <Link href={`/customers/${c.id}/edit`}>
@@ -143,7 +160,12 @@ async function CustomerContent({ params }) {
             <UserIcon /> Overview
           </TabsTrigger>
           <TabsTrigger value="plans">
-            <FileTextIcon /> Plans &amp; purchases
+            <FileTextIcon /> Plans
+            {plans.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 min-w-5 rounded-full px-1.5 tabular-nums">
+                {plans.length}
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="portal">
             <KeyRoundIcon /> Portal access
@@ -235,22 +257,72 @@ async function CustomerContent({ params }) {
           </Card>
         </TabsContent>
 
-        <TabsContent value="plans">
-          <Card>
-            <CardContent>
-              <Empty className="py-12">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <ReceiptIcon />
-                  </EmptyMedia>
-                  <EmptyTitle>No plans or purchases yet</EmptyTitle>
-                  <EmptyDescription>
-                    Installment plans, bike purchases, payments and receipts for {c.name} will be listed here.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            </CardContent>
-          </Card>
+        <TabsContent value="plans" className="space-y-4">
+          {canSeePlans && plans.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                {plans.length} {plans.length === 1 ? "plan" : "plans"}
+                {owed > 0 && (
+                  <>
+                    {" "}· still owes <span className="font-medium text-foreground tabular-nums">{formatPKR(owed)}</span>
+                  </>
+                )}
+              </p>
+              {canCreatePlan && (
+                <Button size="sm" asChild>
+                  <Link href={`/plans/new?customerId=${c.id}`}>
+                    <FilePlus2Icon /> New plan
+                  </Link>
+                </Button>
+              )}
+            </div>
+          )}
+          {canSeePlans && plans.length > 0 ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {plans.map((p) => (
+                <Link key={p.id} href={`/plans/${p.id}`} className="group rounded-xl border bg-card p-4 transition-shadow hover:shadow-md">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-mono text-sm font-semibold group-hover:underline">#{p.accountNumber}</p>
+                      <p className="truncate font-medium">{p.item.description}</p>
+                      <p className="text-xs text-muted-foreground">{formatBusinessDate(p.agreementDate)}</p>
+                    </div>
+                    <PlanStatusBadge status={p.status} overdue={p.overdue} />
+                  </div>
+                  <PlanProgress percent={p.percent} status={p.status} overdue={p.overdue} className="mt-4" />
+                  <div className="mt-2 flex justify-between text-xs text-muted-foreground tabular-nums">
+                    <span>Paid {formatPKR(p.cashReceived)} of {formatPKR(p.agreedTotal)}</span>
+                    <span className="font-medium text-foreground">Balance {formatPKR(p.balance)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent>
+                <Empty className="py-12">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <ReceiptIcon />
+                    </EmptyMedia>
+                    <EmptyTitle>{canSeePlans ? "No plans yet" : "Plans are hidden"}</EmptyTitle>
+                    <EmptyDescription>
+                      {canSeePlans
+                        ? `Installment plans for ${c.name} will be listed here.`
+                        : "You need the “View plans” permission to see this customer's plans."}
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  {canSeePlans && canCreatePlan && (
+                    <Button size="sm" asChild>
+                      <Link href={`/plans/new?customerId=${c.id}`}>
+                        <FilePlus2Icon /> New plan
+                      </Link>
+                    </Button>
+                  )}
+                </Empty>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="portal">

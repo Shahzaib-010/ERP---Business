@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { SearchIcon, UserIcon, UserPlusIcon } from "lucide-react";
+import { FilePlus2Icon, FileTextIcon, SearchIcon, UserIcon, UserPlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -21,7 +21,7 @@ import { formatPhone } from "@/lib/phone";
 import { ACCOUNT_ITEM, NAV_GROUPS } from "./nav-config";
 
 /** Ctrl+K / ⌘K: jump to a page, run an action or find a record. */
-export function CommandMenu({ allowed, canCreateCustomer }) {
+export function CommandMenu({ allowed, canCreateCustomer, canCreatePlan }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -74,7 +74,7 @@ export function CommandMenu({ allowed, canCreateCustomer }) {
         className="h-8 w-full justify-start gap-2 bg-background px-2.5 font-normal text-muted-foreground shadow-none sm:w-56 lg:w-72"
       >
         <SearchIcon className="size-4" />
-        <span className="truncate">Search customers…</span>
+        <span className="truncate">Search…</span>
         <Kbd className="ml-auto hidden sm:inline-flex">Ctrl K</Kbd>
       </Button>
 
@@ -82,7 +82,7 @@ export function CommandMenu({ allowed, canCreateCustomer }) {
         <Command>
         {/* Record results come from the server; their `value` includes the query so cmdk's
             own filter always keeps them. */}
-        <CommandInput placeholder="Name, CNIC, phone, or a page…" value={query} onValueChange={onQueryChange} />
+        <CommandInput placeholder="Name, CNIC, phone, account no. or a page…" value={query} onValueChange={onQueryChange} />
         <CommandList>
           <CommandEmpty>{pending ? "Searching…" : "No results."}</CommandEmpty>
 
@@ -95,7 +95,21 @@ export function CommandMenu({ allowed, canCreateCustomer }) {
           {groups.map((g) =>
             g.items.length ? (
               <CommandGroup key={g.type} heading={g.label}>
-                {g.items.map((c) => (
+                {g.type === "plans" &&
+                  g.items.map((pl) => (
+                    <CommandItem key={pl.id} value={`plan ${pl.accountNumber} ${query}`} onSelect={() => go(`/plans/${pl.id}`)}>
+                      <FileTextIcon />
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate">
+                          <span className="font-mono font-semibold">#{pl.accountNumber}</span> · {pl.customer?.name}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {pl.item.description} · balance Rs {pl.balance.toLocaleString("en-PK")}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                {g.type === "customers" && g.items.map((c) => (
                   <CommandItem
                     key={c.id}
                     value={`${c.name} ${c.cnicMasked} ${c.phones.join(" ")} ${query}`}
@@ -125,12 +139,20 @@ export function CommandMenu({ allowed, canCreateCustomer }) {
           )}
 
           <CommandSeparator />
-          {canCreateCustomer && (
+          {(canCreateCustomer || canCreatePlan) && (
             <CommandGroup heading="Actions">
-              <CommandItem onSelect={() => go("/customers/new")}>
-                <UserPlusIcon />
-                Add customer
-              </CommandItem>
+              {canCreatePlan && (
+                <CommandItem onSelect={() => go("/plans/new")}>
+                  <FilePlus2Icon />
+                  New installment plan
+                </CommandItem>
+              )}
+              {canCreateCustomer && (
+                <CommandItem onSelect={() => go("/customers/new")}>
+                  <UserPlusIcon />
+                  Add customer
+                </CommandItem>
+              )}
             </CommandGroup>
           )}
           <CommandGroup heading="Go to">

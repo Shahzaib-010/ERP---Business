@@ -1,4 +1,5 @@
 import {
+  FileTextIcon,
   LayoutDashboardIcon,
   SearchIcon,
   ShieldCheckIcon,
@@ -19,7 +20,10 @@ export const NAV_GROUPS = [
   },
   {
     label: "Sales",
-    items: [{ href: "/customers", label: "Customers", icon: UsersIcon, permission: "customers.view" }],
+    items: [
+      { href: "/customers", label: "Customers", icon: UsersIcon, permission: "customers.view" },
+      { href: "/plans", label: "Installment plans", icon: FileTextIcon, permission: "installments.view" },
+    ],
   },
   {
     label: "Administration",
@@ -33,6 +37,7 @@ export const ACCOUNT_ITEM = { href: "/account", label: "My account", icon: UserC
 export const SEGMENT_LABELS = {
   dashboard: "Dashboard",
   customers: "Customers",
+  plans: "Installment plans",
   users: "Staff accounts",
   account: "My account",
   search: "Search",

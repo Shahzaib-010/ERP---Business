@@ -5,9 +5,10 @@ import { StaffUser } from "@/server/models/StaffUser";
 import { can, requireStaffActor } from "@/server/permissions";
 import { listRecentActivity } from "@/server/services/audit";
 import { toListItem } from "@/server/services/customers";
+import { getInstallmentOverview } from "@/server/services/installments";
 
 // Dashboard figures. Each section is included only when the actor may see that module.
-// Money figures (sales, cash, receivables) are added with Phases 3–5.
+// Showroom sales and the cash book are added with Phases 3 and 5.
 
 /** Start of the current month in Asia/Karachi (UTC+5, no DST), as a UTC Date. */
 function startOfMonthPk(now = new Date(), monthsBack = 0) {
@@ -18,7 +19,7 @@ function startOfMonthPk(now = new Date(), monthsBack = 0) {
 export async function getDashboardOverview(actor) {
   requireStaffActor(actor);
   await connectDB();
-  const out = { customers: null, staff: null, activity: null };
+  const out = { customers: null, staff: null, activity: null, installments: null };
 
   if (can(actor, "customers.view")) {
     const thisMonth = startOfMonthPk();
@@ -39,6 +40,10 @@ export async function getDashboardOverview(actor) {
       StaffUser.countDocuments({ isActive: false }),
     ]);
     out.staff = { active, disabled };
+  }
+
+  if (can(actor, "installments.view")) {
+    out.installments = await getInstallmentOverview(actor);
   }
 
   if (can(actor, "audit.view")) {

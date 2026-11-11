@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BUSINESS } from "@/lib/business";
+import { LoginMenu } from "./login-menu";
 
 export const tel = (phone) => `tel:${phone.replace(/\D/g, "")}`;
 
@@ -38,12 +39,13 @@ export function PublicHeader({ active, tone = "light" }) {
           <Mark />
           <span className="text-sm font-semibold tracking-tight">{BUSINESS.name}</span>
         </Link>
-        <nav className="flex items-center gap-6 text-sm">
+        <nav className="flex items-center gap-4 text-sm sm:gap-6">
           {link("/showroom", "Showroom", "showroom")}
-          {link("/#visit", "Visit", "visit")}
-          <a href={tel(BUSINESS.contacts[0].phone)} className={`hidden tabular-nums sm:inline ${dark ? "text-white/60 hover:text-white" : "text-muted-foreground hover:text-foreground"}`}>
+          <span className="hidden sm:inline">{link("/#visit", "Visit", "visit")}</span>
+          <a href={tel(BUSINESS.contacts[0].phone)} className={`hidden tabular-nums lg:inline ${dark ? "text-white/60 hover:text-white" : "text-muted-foreground hover:text-foreground"}`}>
             {BUSINESS.contacts[0].phone}
           </a>
+          <LoginMenu dark={dark} />
         </nav>
       </div>
     </header>

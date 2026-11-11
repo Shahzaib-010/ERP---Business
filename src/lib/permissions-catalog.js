@@ -84,7 +84,8 @@ export const PERMISSION_GROUPS = [
 export const GRANTABLE_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) => g.actions.map((a) => a.key));
 
 /** Only a Superadmin ever has these. They cannot be granted. */
-export const SUPERADMIN_ONLY_PERMISSIONS = ["users.manage", "settings.manage", "audit.viewAll"];
+/** "installments.discount": close a balance with a settlement discount (D-008). */
+export const SUPERADMIN_ONLY_PERMISSIONS = ["users.manage", "settings.manage", "audit.viewAll", "installments.discount"];
 
 /** Admin has every grantable permission plus the operational audit view. */
 export const ADMIN_PERMISSIONS = [...GRANTABLE_PERMISSIONS, "audit.view"];

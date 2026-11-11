@@ -1,7 +1,9 @@
 import Link from "next/link";
 import Form from "next/form";
 import { Suspense } from "react";
-import { ArrowRightIcon, SearchIcon, SearchXIcon, UsersIcon } from "lucide-react";
+import { ArrowRightIcon, FileTextIcon, SearchIcon, SearchXIcon, UsersIcon } from "lucide-react";
+import { PlanStatusBadge } from "@/components/app/plan-ui";
+import { formatPKR } from "@/lib/format";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +20,7 @@ import { formatPhone } from "@/lib/phone";
 
 export const metadata = { title: "Search" };
 
-const GROUP_ICONS = { customers: UsersIcon };
+const GROUP_ICONS = { customers: UsersIcon, plans: FileTextIcon };
 const RESULT_LIMIT = 20;
 
 export default function SearchPage({ searchParams }) {
@@ -115,6 +117,21 @@ async function SearchContent({ searchParams }) {
                 )}
               </CardHeader>
               <ul className="divide-y">
+                {g.type === "plans" &&
+                  g.items.map((pl) => (
+                    <li key={pl.id}>
+                      <Link href={`/plans/${pl.id}`} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50">
+                        <span className="w-16 shrink-0 font-mono text-sm font-semibold">#{pl.accountNumber}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium group-hover:underline">{pl.customer?.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {pl.item.description} · balance {formatPKR(pl.balance)}
+                          </p>
+                        </div>
+                        <PlanStatusBadge status={pl.status} overdue={pl.overdue} />
+                      </Link>
+                    </li>
+                  ))}
                 {g.type === "customers" &&
                   g.items.map((c) => (
                     <li key={c.id}>
