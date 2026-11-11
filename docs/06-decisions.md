@@ -196,3 +196,18 @@ Supersedes D-006 answers 2 and 8.
 - Every page has: a page header, a loading skeleton, empty states, an error boundary
   and toasts for saved changes. Destructive actions ask for confirmation.
 - Brand colour: deep indigo-blue (`--primary` in `src/app/globals.css`).
+
+## D-011 — Public site design — Decided (2026-11-11)
+
+- **Landing page (`/`)**: clean and minimal, modelled on the owner's reference
+  (light hero with the bike and key figures, dark close-up sections with yellow
+  highlights, a timeline with a yellow line). It shows the showroom only: **no
+  installments are mentioned** on the public pages.
+- **3D showroom (`/showroom`)**: separate page with an interactive 3D bike (rotate,
+  zoom, change model and colour). The bike is drawn in code (three.js); there are no
+  licensed model files. `?model=<id>` opens a given model.
+- Models, specs and colours on both pages are **placeholder demo data** in
+  `src/lib/showroom.js`, to be replaced with the real bikes.
+- Colours (supersedes the blue in D-010): warm stone neutrals, charcoal for primary
+  actions, **yellow `--brand` accent** used mainly on dark surfaces. Condensed display
+  font (Barlow Condensed) for figures and section titles.

@@ -1,90 +1,182 @@
 import Link from "next/link";
-import { ArrowRightIcon, BikeIcon, MapPinIcon, PhoneIcon, ShieldCheckIcon, SmartphoneIcon, WalletIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowRightIcon, ArrowUpRightIcon } from "lucide-react";
 import { BUSINESS } from "@/lib/business";
+import { SHOWROOM_MODELS } from "@/lib/showroom";
+import { BikeArt } from "./_landing/bike-art";
+import { PublicFooter, PublicHeader, tel } from "./_landing/public-chrome";
+import { RideTimeline } from "./_landing/ride-timeline";
 
-const FEATURES = [
-  { icon: BikeIcon, title: "New & used motorcycles", text: "Buy a motorcycle on cash or on installments." },
-  { icon: WalletIcon, title: "Easy monthly installments", text: "An advance and a fixed monthly amount, agreed with you." },
-  { icon: SmartphoneIcon, title: "Check your account online", text: "Customers can see their plans and payments any time." },
+export const metadata = {
+  title: { absolute: `${BUSINESS.name} — Motorcycle showroom, Rahim Yar Khan` },
+  description: "Motorcycle showroom in the Auto Market, Rahim Yar Khan. See every model and colour.",
+};
+
+const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(BUSINESS.address)}`;
+const allColours = SHOWROOM_MODELS.flatMap((m) => m.colors);
+const engineCc = SHOWROOM_MODELS.map((m) => ({ name: m.name, cc: parseInt(m.specs[0].value, 10) }));
+
+const STATS = [
+  { value: String(SHOWROOM_MODELS.length), unit: "", label: "Models" },
+  { value: String(allColours.length), unit: "", label: "Colours" },
+  { value: String(Math.max(...engineCc.map((e) => e.cc))), unit: "cc", label: "Largest engine" },
+  { value: "360", unit: "°", label: "3D view" },
 ];
+
+function Stat({ value, unit, label, dark }) {
+  return (
+    <div className="text-center">
+      <p className={`font-condensed text-4xl font-semibold tabular-nums sm:text-5xl ${dark ? "text-white" : ""}`}>
+        {value}
+        <sup className="ml-0.5 align-super text-sm font-normal text-muted-foreground">{unit}</sup>
+      </p>
+      <p className={`mt-1 text-[0.7rem] tracking-[0.18em] uppercase ${dark ? "text-white/45" : "text-muted-foreground"}`}>{label}</p>
+    </div>
+  );
+}
+
+/** Dark close-up section: drawing on one side, title and figures on the other. */
+function Feature({ id, title, lead, text, art, figures, flip, children }) {
+  return (
+    <section id={id} className={`relative overflow-hidden bg-[oklch(0.13_0_0)] text-white ${flip ? "border-t border-white/5" : ""}`}>
+      <div className={`mx-auto grid w-full max-w-6xl items-center gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1.25fr_1fr] lg:py-20 ${flip ? "lg:[&>*:first-child]:order-2" : ""}`}>
+        <div className="relative [mask-image:radial-gradient(ellipse_62%_62%_at_50%_50%,black_45%,transparent_100%)]">{art}</div>
+        <div>
+          <h2 className="text-5xl font-bold tracking-tight sm:text-6xl">{title}</h2>
+          <p className="mt-6 max-w-md text-sm leading-relaxed text-white/60">
+            <strong className="font-semibold text-white">{lead}</strong> {text}
+          </p>
+          {figures && (
+            <dl className="mt-8 flex flex-wrap gap-x-8 gap-y-4">
+              {figures.map((f) => (
+                <div key={f.label} className="flex flex-col-reverse">
+                  <dt className="text-[0.7rem] tracking-[0.15em] text-white/45 uppercase">{f.label}</dt>
+                  <dd className="font-condensed text-3xl font-semibold tabular-nums">
+                    {f.value}
+                    <span className="ml-0.5 text-sm font-normal text-white/50">{f.unit}</span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {children}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function Home() {
   return (
     <main className="flex min-h-svh flex-1 flex-col">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-        <span className="flex items-center gap-2 font-semibold">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <BikeIcon className="size-4" />
-          </span>
-          {BUSINESS.name}
-        </span>
-        <Button variant="ghost" asChild>
-          <Link href="/login">Staff sign in</Link>
-        </Button>
-      </header>
+      <PublicHeader />
 
-      <section className="relative flex flex-1 items-center overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60rem_30rem_at_50%_-10%,color-mix(in_oklch,var(--primary)_14%,transparent),transparent)]" />
-        <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:items-center">
-          <div className="space-y-6 animate-in fade-in-0 slide-in-from-bottom-3 duration-700">
-            <p lang="ur" dir="rtl" className="text-right text-3xl font-bold text-primary lg:text-left">
-              {BUSINESS.nameUrdu}
-            </p>
-            <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-              Motorcycles on cash and easy installments
-            </h1>
-            <p className="max-w-lg text-lg text-muted-foreground">
-              Visit us in the Auto Market, Rahim Yar Khan. Customers with an installment account can check their balance and
-              payments online.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Button size="lg" className="h-11 px-5" asChild>
-                <Link href="/login/customer">
-                  Check my account <ArrowRightIcon />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="h-11 px-5" asChild>
-                <a href={`tel:${BUSINESS.contacts[0].phone.replace(/\D/g, "")}`}>
-                  <PhoneIcon /> Call {BUSINESS.contacts[0].phone}
-                </a>
-              </Button>
-            </div>
+      {/* Hero: the bike, centred, with key figures underneath */}
+      <section className="bg-[oklch(0.965_0.002_90)]">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-5 pt-16 pb-20 text-center sm:px-8 sm:pt-20">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">What makes {BUSINESS.name} special</h1>
+          <p className="mt-2 text-sm text-muted-foreground">New and used motorcycles in the Auto Market, Rahim Yar Khan.</p>
+
+          <BikeArt className="mt-10 w-full max-w-2xl animate-in fade-in-0 zoom-in-95 duration-700" />
+
+          <div className="mt-10 grid w-full max-w-2xl grid-cols-2 gap-y-8 sm:grid-cols-4">
+            {STATS.map((s) => (
+              <Stat key={s.label} {...s} />
+            ))}
           </div>
 
-          <div className="grid gap-4 animate-in fade-in-0 slide-in-from-bottom-3 duration-700 [animation-delay:150ms] [animation-fill-mode:both]">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="flex gap-4 rounded-xl border bg-card p-5 shadow-xs">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <f.icon className="size-5" />
-                </div>
-                <div>
-                  <p className="font-medium">{f.title}</p>
-                  <p className="text-sm text-muted-foreground">{f.text}</p>
-                </div>
-              </div>
+          <Link href="/showroom" className="group mt-12 inline-flex items-center gap-2 border-b border-foreground pb-1 text-sm font-medium">
+            Explore the showroom in 3D
+            <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+        </div>
+      </section>
+
+      <Feature
+        id="engine"
+        title="Engine"
+        lead={`From ${Math.min(...engineCc.map((e) => e.cc))} cc to ${Math.max(...engineCc.map((e) => e.cc))} cc.`}
+        text="Light commuters for the daily run, and stronger engines for longer trips and the highway. Every engine on the line-up is on display at the showroom."
+        figures={engineCc.map((e) => ({ value: e.cc, unit: "cc", label: e.name }))}
+        art={
+          <div className="relative">
+            <BikeArt tone="dark" highlight="engine" viewBox="250 150 400 260" className="w-full" title="Engine close-up" />
+            <span className="absolute top-[12%] left-[6%] font-condensed text-xs tracking-[0.2em] text-brand uppercase">
+              {engineCc.map((e) => e.cc).join(" / ")} cc
+            </span>
+          </div>
+        }
+      />
+
+      <Feature
+        id="colour"
+        title="Colour"
+        flip
+        lead={`${allColours.length} colours across the line-up.`}
+        text="From classic red to matte black. Try every one in the 3D showroom, then come and see the real paint in person."
+        art={
+          <div className="relative">
+            <BikeArt tone="dark" highlight="tank" viewBox="330 70 300 200" className="w-full" title="Fuel tank close-up" />
+            <span className="absolute right-[6%] bottom-[10%] font-condensed text-xs tracking-[0.2em] text-brand uppercase">
+              {SHOWROOM_MODELS[0].colors.length} per model
+            </span>
+          </div>
+        }
+      >
+        <div className="mt-8 flex flex-wrap gap-2">
+          {allColours.map((c) => (
+            <span key={`${c.name}-${c.hex}`} title={c.name} className="size-6 rounded-full ring-1 ring-white/15" style={{ background: c.hex }} />
+          ))}
+        </div>
+        <Link href="/showroom" className="group mt-8 inline-flex items-center gap-2 border-b border-brand pb-1 text-sm font-medium text-white">
+          Try the colours
+          <ArrowRightIcon className="size-4 text-brand transition-transform group-hover:translate-x-1" />
+        </Link>
+      </Feature>
+
+      {/* Timeline */}
+      <section className="border-t border-white/10 bg-[oklch(0.13_0_0)] text-white">
+        <div className="mx-auto w-full max-w-6xl px-5 pt-20 pb-24 sm:px-8">
+          <h2 className="text-center font-condensed text-3xl font-light tracking-[0.12em] uppercase sm:text-5xl">Your ride, step by step</h2>
+          <div className="mt-12">
+            <RideTimeline />
+          </div>
+        </div>
+      </section>
+
+      {/* Visit */}
+      <section id="visit" className="scroll-mt-14 bg-[oklch(0.965_0.002_90)]">
+        <div className="mx-auto grid w-full max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-2 lg:items-end">
+          <div>
+            <p lang="ur" dir="rtl" className="text-right text-3xl lg:text-left">
+              {BUSINESS.nameUrdu}
+            </p>
+            <h2 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">Visit the showroom</h2>
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+              Every model and colour is waiting for you. Drop in, or call before you come.
+            </p>
+          </div>
+          <div className="divide-y border-y text-sm">
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-between gap-4 py-5">
+              <span>
+                <span className="block text-[0.7rem] tracking-[0.18em] text-muted-foreground uppercase">Address</span>
+                <span className="mt-1 block font-medium">{BUSINESS.address}</span>
+              </span>
+              <ArrowUpRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
+            </a>
+            {BUSINESS.contacts.map((c) => (
+              <a key={c.phone} href={tel(c.phone)} className="group flex items-center justify-between gap-4 py-5">
+                <span>
+                  <span className="block text-[0.7rem] tracking-[0.18em] text-muted-foreground uppercase">{c.name}</span>
+                  <span className="mt-1 block font-condensed text-2xl font-semibold tabular-nums">{c.phone}</span>
+                </span>
+                <ArrowUpRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
+              </a>
             ))}
           </div>
         </div>
       </section>
 
-      <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <span className="flex items-center gap-2">
-            <MapPinIcon className="size-4" /> {BUSINESS.address}
-          </span>
-          <span className="flex flex-wrap gap-x-4 gap-y-1">
-            {BUSINESS.contacts.map((c) => (
-              <a key={c.phone} href={`tel:${c.phone.replace(/\D/g, "")}`} className="hover:text-foreground">
-                {c.name}: {c.phone}
-              </a>
-            ))}
-          </span>
-          <span className="flex items-center gap-1.5 text-xs">
-            <ShieldCheckIcon className="size-3.5" /> Private system
-          </span>
-        </div>
-      </footer>
+      <PublicFooter />
     </main>
   );
 }
