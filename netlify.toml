@@ -1,5 +1,4 @@
 # Netlify build settings. This file overrides the values in the Netlify dashboard.
-# Netlify's Next.js adapter (OpenNext-based) is applied automatically; do not pin it.
 # Secrets (MONGODB_URI, SESSION_SECRET, S3 keys) are set in the dashboard, never here.
 
 [build]
@@ -11,3 +10,9 @@
 [build.environment]
   # Next.js 16 needs Node.js 20.9 or newer.
   NODE_VERSION = "22"
+
+# Netlify's Next.js adapter. It is meant to be added automatically, but on this site the
+# build ran without it (only static files were published, every page was a 404), so it is
+# declared here and installed as a devDependency. Keep it on the latest 5.x.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
