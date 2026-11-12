@@ -38,6 +38,7 @@ import { formatPhone } from "@/lib/phone";
 import { cn } from "@/lib/utils";
 import { applyDiscountAction, recordPaymentAction, updateScheduleAction, voidPaymentAction } from "../actions";
 import { PlanActions, VoidPaymentButton } from "./plan-dialogs";
+import { PrintLink } from "@/components/app/print-link";
 
 export const metadata = { title: "Installment plan" };
 
@@ -108,6 +109,8 @@ async function PlanContent({ params }) {
   const active = plan.status === "active";
   const canVoid = can(actor, "payments.edit");
   const canDiscount = can(actor, "installments.discount");
+  const canPrint = can(actor, "receipts.view");
+  const showActions = canVoid || canPrint;
 
   return (
     <PageBody>
@@ -233,7 +236,7 @@ async function PlanContent({ params }) {
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="text-right">Balance</TableHead>
                     <TableHead className="hidden md:table-cell">Entered by</TableHead>
-                    {canVoid && <TableHead className="w-10 pr-4" />}
+                    {showActions && <TableHead className="w-16 pr-4" />}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -262,9 +265,10 @@ async function PlanContent({ params }) {
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{p.balanceAfter != null ? formatPKR(p.balanceAfter) : "—"}</TableCell>
                         <TableCell className="hidden text-sm text-muted-foreground md:table-cell">{p.enteredBy}</TableCell>
-                        {canVoid && (
-                          <TableCell className="pr-4 text-right">
-                            {!voided && (p.kind !== "discount" || canDiscount) && (
+                        {showActions && (
+                          <TableCell className="pr-4 text-right whitespace-nowrap">
+                            {canPrint && p.kind !== "discount" && <PrintLink href={`/receipts/payment/${p.id}`} />}
+                            {canVoid && !voided && (p.kind !== "discount" || canDiscount) && (
                               <VoidPaymentButton action={voidPaymentAction.bind(null, p.id)} label={`${PAYMENT_KIND_LABELS[p.kind].toLowerCase()} of ${formatPKR(p.amount)}`} />
                             )}
                           </TableCell>

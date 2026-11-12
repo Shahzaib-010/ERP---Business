@@ -10,6 +10,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local scratch space (test temp files, screenshot tooling, browser profiles).
+    ".tmp/**",
   ]),
 ]);
 

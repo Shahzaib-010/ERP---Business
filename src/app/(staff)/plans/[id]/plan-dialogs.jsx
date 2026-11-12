@@ -81,8 +81,10 @@ export function RecordPaymentDialog({ action, balance, suggested, nextReceipt, m
 
 function PaymentForm({ action, balance, suggested, nextReceipt, minDate, onDone }) {
   const [state, formAction] = useDialogAction(action, {
-    onSuccess: () => {
-      toast.success("Payment recorded");
+    onSuccess: (s) => {
+      toast.success("Payment recorded", {
+        action: { label: "Print receipt", onClick: () => window.open(`/receipts/payment/${s.data.id}`, "_blank", "noopener") },
+      });
       onDone();
     },
   });

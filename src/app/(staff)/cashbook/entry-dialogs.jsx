@@ -55,7 +55,9 @@ function EntryForm({ action, defaultType, onDone }) {
   const errors = state?.fieldErrors ?? {};
   useEffect(() => {
     if (state?.ok) {
-      toast.success("Entry added");
+      toast.success("Entry added", {
+        action: { label: "Print voucher", onClick: () => window.open(`/receipts/cashbook/${state.data.id}`, "_blank", "noopener") },
+      });
       onDone();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

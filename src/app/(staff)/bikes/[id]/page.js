@@ -24,6 +24,7 @@ import { formatPhone } from "@/lib/phone";
 import { cn } from "@/lib/utils";
 import { cancelSaleAction, paySellerAction, sellCashAction, voidSellerPaymentAction } from "../actions";
 import { BikeActions, VoidSellerPaymentButton } from "./bike-dialogs";
+import { PrintLink } from "@/components/app/print-link";
 
 export const metadata = { title: "Bike" };
 
@@ -65,6 +66,8 @@ async function BikeContent({ params }) {
     can(actor, "audit.view") ? listEntityHistory(actor, { entityType: "bike", entityId: b.id }) : Promise.resolve(null),
   ]);
   const canVoid = can(actor, "payments.edit");
+  const canPrint = can(actor, "receipts.view");
+  const showActions = canVoid || canPrint;
   const sale = b.saleDetail;
 
   return (
@@ -178,7 +181,7 @@ async function BikeContent({ params }) {
                   <TableHead className="text-right">Paid</TableHead>
                   <TableHead className="text-right">Still owed</TableHead>
                   <TableHead className="hidden sm:table-cell">Entered by</TableHead>
-                  {canVoid && <TableHead className="w-10 pr-5" />}
+                  {showActions && <TableHead className="w-16 pr-5" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -195,9 +198,10 @@ async function BikeContent({ params }) {
                       <TableCell className={cn("text-right tabular-nums", voided && "line-through")}>{formatPKR(p.amount)}</TableCell>
                       <TableCell className="text-right tabular-nums">{p.owedAfter != null ? formatPKR(p.owedAfter) : "—"}</TableCell>
                       <TableCell className="hidden text-sm text-muted-foreground sm:table-cell">{p.enteredBy}</TableCell>
-                      {canVoid && (
-                        <TableCell className="pr-5 text-right">
-                          {!voided && <VoidSellerPaymentButton action={voidSellerPaymentAction.bind(null, p.id)} label={`payment of ${formatPKR(p.amount)}`} />}
+                      {showActions && (
+                        <TableCell className="pr-5 text-right whitespace-nowrap">
+                          {canPrint && <PrintLink href={`/receipts/seller-payment/${p.id}`} label="Print voucher" />}
+                          {canVoid && !voided && <VoidSellerPaymentButton action={voidSellerPaymentAction.bind(null, p.id)} label={`payment of ${formatPKR(p.amount)}`} />}
                         </TableCell>
                       )}
                     </TableRow>
@@ -252,7 +256,10 @@ async function BikeContent({ params }) {
                 </p>
               </Link>
             ) : (
-              sale.note && <p className="rounded-lg bg-muted/50 p-3 text-sm whitespace-pre-line">{sale.note}</p>
+              <div className="space-y-3">
+                {canPrint && sale.mode === "cash" && <PrintLink href={`/receipts/bike-sale/${b.id}`} withText />}
+                {sale.note && <p className="rounded-lg bg-muted/50 p-3 text-sm whitespace-pre-line">{sale.note}</p>}
+              </div>
             )}
           </CardContent>
         )}

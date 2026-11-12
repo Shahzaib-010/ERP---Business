@@ -17,11 +17,11 @@ import { CustomerPicker } from "../../plans/customer-picker";
 import { MoneyField } from "../../plans/plan-fields";
 
 /** A fresh form each time the dialog opens; toast + close on success. */
-function ActionForm({ action, success, onDone, children }) {
+function ActionForm({ action, success, onDone, printHref, children }) {
   const [state, formAction] = useActionState(action, null);
   useEffect(() => {
     if (state?.ok) {
-      toast.success(typeof success === "function" ? success(state) : success);
+      toast.success(typeof success === "function" ? success(state) : success, printHref ? { action: { label: "Print receipt", onClick: () => window.open(printHref, "_blank", "noopener") } } : undefined);
       onDone();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,7 +151,7 @@ export function BikeActions({ bikeId, inStock, payable, purchaseDate, nextReceip
             <DialogTitle>Sell for cash</DialogTitle>
             <DialogDescription>The customer pays the full price now. To sell on installments, use “Sell on installments” instead.</DialogDescription>
           </DialogHeader>
-          <ActionForm key={`cash-${d.round}`} action={actions.sell} success="Bike sold" onDone={d.hide}>
+          <ActionForm key={`cash-${d.round}`} action={actions.sell} success="Bike sold" printHref={`/receipts/bike-sale/${bikeId}`} onDone={d.hide}>
             {({ errors, values }) => <CashSaleFields errors={errors} values={values} purchaseDate={purchaseDate} nextReceipt={nextReceipt} />}
           </ActionForm>
         </DialogContent>

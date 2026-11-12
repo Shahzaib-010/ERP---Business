@@ -92,6 +92,7 @@ export async function collectEntries({ from, to } = {}) {
       detail: plan ? `#${plan.accountNumber} · ${plan.item.description}` : "",
       reference: p.receiptNumber ? `Receipt ${p.receiptNumber}` : null,
       href: `/plans/${p.planId}`,
+      receiptHref: `/receipts/payment/${p._id}`,
       createdAt: p.createdAt,
     });
   }
@@ -106,6 +107,7 @@ export async function collectEntries({ from, to } = {}) {
       detail: `B-${b.bikeNumber} · ${b.make} ${b.model}`,
       reference: b.sale.receiptNumber ? `Receipt ${b.sale.receiptNumber}` : null,
       href: `/bikes/${b._id}`,
+      receiptHref: `/receipts/bike-sale/${b._id}`,
       createdAt: b.updatedAt,
     });
   }
@@ -121,6 +123,7 @@ export async function collectEntries({ from, to } = {}) {
       detail: b ? `B-${b.bikeNumber} · ${b.make} ${b.model}` : "",
       reference: null,
       href: `/bikes/${p.bikeId}`,
+      receiptHref: `/receipts/seller-payment/${p._id}`,
       createdAt: p.createdAt,
     });
   }
@@ -138,6 +141,7 @@ export async function collectEntries({ from, to } = {}) {
       detail: t.party ?? "",
       reference: t.voucherNumber ? `Voucher ${t.voucherNumber}` : null,
       href: null,
+      receiptHref: `/receipts/cashbook/${t._id}`,
       createdAt: t.createdAt,
     });
   }

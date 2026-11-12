@@ -18,6 +18,7 @@ import { formatNumber, formatPKR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { createTransactionAction, voidTransactionAction } from "./actions";
 import { AddEntryDialog, VoidEntryButton } from "./entry-dialogs";
+import { PrintLink } from "@/components/app/print-link";
 
 export const metadata = { title: "Cash book" };
 
@@ -60,6 +61,8 @@ async function CashbookContent({ searchParams }) {
   const sp = await searchParams;
   const data = await listCashbook(actor, { period: sp.period, direction: sp.direction, page: sp.page });
   const canVoid = can(actor, "transactions.edit");
+  const canPrint = can(actor, "receipts.view");
+  const showActions = canVoid || canPrint;
   const href = (over) => {
     const next = { period: data.period, direction: data.direction, page: 1, ...over };
     const params = new URLSearchParams();
@@ -127,7 +130,7 @@ async function CashbookContent({ searchParams }) {
                 <TableHead className="hidden md:table-cell">Type</TableHead>
                 <TableHead className="text-right">In</TableHead>
                 <TableHead className="text-right">Out</TableHead>
-                {canVoid && <TableHead className="w-10 pr-4" />}
+                {showActions && <TableHead className="w-16 pr-4" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -155,9 +158,10 @@ async function CashbookContent({ searchParams }) {
                   </TableCell>
                   <TableCell className="text-right font-medium tabular-nums text-success">{e.direction === "in" ? formatPKR(e.amount) : ""}</TableCell>
                   <TableCell className="text-right font-medium tabular-nums">{e.direction === "out" ? formatPKR(e.amount) : ""}</TableCell>
-                  {canVoid && (
-                    <TableCell className="pr-4 text-right">
-                      {e.transactionId && <VoidEntryButton action={voidTransactionAction.bind(null, e.transactionId)} label={`${e.sourceLabel} of ${formatPKR(e.amount)}: ${e.title}`} />}
+                  {showActions && (
+                    <TableCell className="pr-4 text-right whitespace-nowrap">
+                      {canPrint && <PrintLink href={e.receiptHref} label={e.direction === "in" ? "Print receipt" : "Print voucher"} />}
+                      {canVoid && e.transactionId && <VoidEntryButton action={voidTransactionAction.bind(null, e.transactionId)} label={`${e.sourceLabel} of ${formatPKR(e.amount)}: ${e.title}`} />}
                     </TableCell>
                   )}
                 </TableRow>
