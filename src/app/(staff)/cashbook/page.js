@@ -86,7 +86,11 @@ async function CashbookContent({ searchParams }) {
         icon={BookOpenIcon}
         title="Cash book"
         description="Every rupee in and out. Customer payments, seller payments and cash bike sales appear here automatically."
-        actions={can(actor, "transactions.create") && <AddEntryDialog action={createTransactionAction} />}
+        actions={
+          can(actor, "transactions.create") && (
+            <AddEntryDialog key={sp.new ?? "closed"} action={createTransactionAction} openWith={typeof sp.new === "string" ? sp.new : undefined} />
+          )
+        }
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

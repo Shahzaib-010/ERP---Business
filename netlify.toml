@@ -1,0 +1,13 @@
+# Netlify build settings. This file overrides the values in the Netlify dashboard.
+# Netlify's Next.js adapter (OpenNext-based) is applied automatically; do not pin it.
+# Secrets (MONGODB_URI, SESSION_SECRET, S3 keys) are set in the dashboard, never here.
+
+[build]
+  command = "npm run build"
+  # The adapter reads the Next.js build output from .next and turns it into
+  # functions + static files. A wrong value here serves files only and every page 404s.
+  publish = ".next"
+
+[build.environment]
+  # Next.js 16 needs Node.js 20.9 or newer.
+  NODE_VERSION = "22"

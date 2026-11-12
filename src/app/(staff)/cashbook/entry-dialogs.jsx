@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowDownLeftIcon, ArrowUpRightIcon, Ban, LandmarkIcon, PlusIcon, ReceiptTextIcon, UserMinusIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,17 +21,28 @@ const TYPES = [
   { value: "owner_withdrawal", label: "Owner withdrawal", hint: "Money taken out by the owner", icon: UserMinusIcon, dir: "out" },
 ];
 
-export function AddEntryDialog({ action, defaultType = "expense" }) {
-  const [open, setOpen] = useState(false);
+/**
+ * `openWith` (from `?new=<type>`, used by the quick menu) opens the dialog on load with that
+ * type chosen. Closing it removes the parameter so a reload does not reopen it; the page keys
+ * this component on the parameter, so the next `?new=` link mounts it fresh.
+ */
+export function AddEntryDialog({ action, defaultType = "expense", openWith }) {
+  const router = useRouter();
+  const deepLinked = TYPES.some((t) => t.value === openWith);
+  const [open, setOpen] = useState(deepLinked);
   const [round, setRound] = useState(0);
+  const startType = deepLinked ? openWith : defaultType;
+  const changeOpen = (o) => {
+    setOpen(o);
+    if (o) setRound((r) => r + 1);
+    else if (deepLinked) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("new");
+      router.replace(url.pathname + url.search, { scroll: false });
+    }
+  };
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        setOpen(o);
-        if (o) setRound((r) => r + 1);
-      }}
-    >
+    <Dialog open={open} onOpenChange={changeOpen}>
       <DialogTrigger asChild>
         <Button>
           <PlusIcon /> Add entry
@@ -41,7 +53,7 @@ export function AddEntryDialog({ action, defaultType = "expense" }) {
           <DialogTitle>Add cash book entry</DialogTitle>
           <DialogDescription>Customer payments, seller payments and bike sales are added automatically. Use this for everything else.</DialogDescription>
         </DialogHeader>
-        <EntryForm key={round} action={action} defaultType={defaultType} onDone={() => setOpen(false)} />
+        <EntryForm key={round} action={action} defaultType={startType} onDone={() => changeOpen(false)} />
       </DialogContent>
     </Dialog>
   );

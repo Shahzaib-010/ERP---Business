@@ -35,7 +35,15 @@ async function StaffShell({ children }) {
       <BreadcrumbProvider>
         <AppSidebar allowed={allowed} user={user} business={{ name: BUSINESS.name }} />
         <SidebarInset className="min-w-0">
-          <SiteHeader allowed={allowed} canCreateCustomer={can(actor, "customers.create")} canCreatePlan={can(actor, "installments.create")} canCreateBike={can(actor, "bikes.create")} />
+          <SiteHeader
+            allowed={allowed}
+            can={{
+              createCustomer: can(actor, "customers.create"),
+              createPlan: can(actor, "installments.create"),
+              createBike: can(actor, "bikes.create"),
+              addCashEntry: can(actor, "transactions.create"),
+            }}
+          />
           <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-7xl">{children}</div>
           </div>
