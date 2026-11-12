@@ -10,6 +10,7 @@
     "lint": "eslint",
     "test": "node --conditions=react-server --import ./scripts/register-hooks.mjs --test --test-concurrency=1 \"tests/*.test.mjs\"",
     "create-superadmin": "node --env-file=.env.local --conditions=react-server --import ./scripts/register-hooks.mjs scripts/create-superadmin.mjs",
+    "create-superadmin:prod": "node --env-file=.env.prod --conditions=react-server --import ./scripts/register-hooks.mjs scripts/create-superadmin.mjs",
     "seed:dev": "node --env-file=.env.local --conditions=react-server --import ./scripts/register-hooks.mjs scripts/seed-dev.mjs"
   },
   "dependencies": {
