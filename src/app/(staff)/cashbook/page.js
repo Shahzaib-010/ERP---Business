@@ -38,14 +38,14 @@ export default function CashbookPage({ searchParams }) {
 
 function Tabs({ items, current, href }) {
   return (
-    <nav className="flex gap-1 overflow-x-auto rounded-lg bg-muted p-1">
+    <nav className="no-scrollbar flex gap-1 overflow-x-auto rounded-lg bg-muted p-1">
       {items.map((t) => (
         <Link
           key={t.key}
           href={href(t.key)}
           aria-current={current === t.key ? "page" : undefined}
           className={cn(
-            "rounded-md px-3 py-1 text-sm whitespace-nowrap transition-colors",
+            "rounded-md px-2.5 py-1 text-[13px] whitespace-nowrap transition-colors sm:px-3 sm:text-sm",
             current === t.key ? "bg-background font-medium shadow-xs" : "text-muted-foreground hover:text-foreground",
           )}
         >
@@ -99,14 +99,14 @@ async function CashbookContent({ searchParams }) {
       </div>
 
       <Card className="gap-0 overflow-hidden py-0">
-        <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
           {summary.map((s) => (
-            <div key={s.label} className="relative bg-card px-5 py-4">
+            <div key={s.label} className="relative min-w-0 bg-card px-4 py-3.5 sm:px-5 sm:py-4">
               {s.accent && <div className="absolute inset-x-0 top-0 h-0.5 bg-brand shadow-[0_0_10px_var(--brand)]" />}
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <s.icon className={cn("size-3.5", s.tone)} /> {s.label}
               </p>
-              <p className={cn("mt-1 text-xl font-semibold tabular-nums sm:text-2xl", s.value < 0 && "text-destructive")}>
+              <p className={cn("mt-1 truncate text-lg font-semibold tabular-nums sm:text-2xl", s.value < 0 && "text-destructive")}>
                 <CountUp value={s.value} prefix="Rs " />
               </p>
             </div>
@@ -129,19 +129,20 @@ async function CashbookContent({ searchParams }) {
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableHead className="pl-4">Date</TableHead>
-                <TableHead>Details</TableHead>
+                <TableHead className="hidden pl-4 sm:table-cell">Date</TableHead>
+                <TableHead className="max-sm:pl-4">Details</TableHead>
                 <TableHead className="hidden md:table-cell">Type</TableHead>
-                <TableHead className="text-right">In</TableHead>
-                <TableHead className="text-right">Out</TableHead>
+                <TableHead className="hidden text-right sm:table-cell">In</TableHead>
+                <TableHead className="hidden text-right sm:table-cell">Out</TableHead>
+                <TableHead className="text-right sm:hidden">Amount</TableHead>
                 {showActions && <TableHead className="w-16 pr-4" />}
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.items.map((e) => (
                 <TableRow key={e.id}>
-                  <TableCell className="pl-4 whitespace-nowrap text-muted-foreground">{formatBusinessDate(e.date)}</TableCell>
-                  <TableCell className="max-w-[22rem]">
+                  <TableCell className="hidden pl-4 whitespace-nowrap text-muted-foreground sm:table-cell">{formatBusinessDate(e.date)}</TableCell>
+                  <TableCell className="max-w-44 max-sm:pl-4 sm:max-w-88">
                     {e.href ? (
                       <Link href={e.href} className="block truncate font-medium hover:underline">
                         {e.title}
@@ -150,6 +151,8 @@ async function CashbookContent({ searchParams }) {
                       <span className="block truncate font-medium">{e.title}</span>
                     )}
                     <p className="truncate text-xs text-muted-foreground">
+                      {/* Phones: the date leads the detail line (its column is hidden) */}
+                      <span className="sm:hidden">{formatBusinessDate(e.date)} · </span>
                       {[e.detail, e.reference].filter(Boolean).join(" · ") || "—"}
                       <span className="md:hidden"> · {e.categoryLabel ?? e.sourceLabel}</span>
                     </p>
@@ -160,8 +163,13 @@ async function CashbookContent({ searchParams }) {
                       {e.categoryLabel ? `${e.sourceLabel}: ${e.categoryLabel}` : e.sourceLabel}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right font-medium tabular-nums text-success">{e.direction === "in" ? formatPKR(e.amount) : ""}</TableCell>
-                  <TableCell className="text-right font-medium tabular-nums">{e.direction === "out" ? formatPKR(e.amount) : ""}</TableCell>
+                  <TableCell className="hidden text-right font-medium tabular-nums text-success sm:table-cell">{e.direction === "in" ? formatPKR(e.amount) : ""}</TableCell>
+                  <TableCell className="hidden text-right font-medium tabular-nums sm:table-cell">{e.direction === "out" ? formatPKR(e.amount) : ""}</TableCell>
+                  {/* Phones: one signed amount instead of the In / Out columns */}
+                  <TableCell className={cn("text-right font-medium tabular-nums sm:hidden", e.direction === "in" && "text-success")}>
+                    {e.direction === "in" ? "+" : "−"}
+                    {formatPKR(e.amount)}
+                  </TableCell>
                   {showActions && (
                     <TableCell className="pr-4 text-right whitespace-nowrap">
                       {canPrint && <PrintLink href={e.receiptHref} label={e.direction === "in" ? "Print receipt" : "Print voucher"} />}

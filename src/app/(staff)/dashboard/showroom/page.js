@@ -166,14 +166,14 @@ async function Content({ searchParams }) {
               </div>
             </div>
           </div>
-          <div className="grid gap-px border-t bg-border sm:grid-cols-3">
-            <div className="bg-card px-6 py-4">
+          <div className="grid grid-cols-2 gap-px border-t bg-border sm:grid-cols-3 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
+            <div className="min-w-0 bg-card px-4 py-3.5 sm:px-6 sm:py-4">
               <Figure label="Owed to sellers" value={d.position.owedToSellers} sub={`On ${d.position.owedBikes} ${d.position.owedBikes === 1 ? "bike" : "bikes"}`} />
             </div>
-            <div className="bg-card px-6 py-4">
+            <div className="min-w-0 bg-card px-4 py-3.5 sm:px-6 sm:py-4">
               <Figure label={`Spent buying (${d.range.label.toLowerCase()})`} value={d.kpis.bought.spend} sub={`${d.kpis.bought.value} ${d.kpis.bought.value === 1 ? "bike" : "bikes"} bought`} />
             </div>
-            <div className="bg-card px-6 py-4">
+            <div className="min-w-0 bg-card px-4 py-3.5 sm:px-6 sm:py-4">
               <p className="text-xs text-muted-foreground">Average days to sell</p>
               <p className="mt-1 text-lg font-semibold tabular-nums">{d.kpis.avgDaysToSell == null ? "—" : `${d.kpis.avgDaysToSell} days`}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">From purchase to sale, last 12 months</p>

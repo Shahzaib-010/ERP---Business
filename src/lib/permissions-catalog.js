@@ -70,6 +70,7 @@ export const PERMISSION_GROUPS = [
     actions: [
       { key: "documents.view", label: "View private documents" },
       { key: "documents.upload", label: "Upload documents" },
+      { key: "documents.remove", label: "Remove, restore and permanently erase documents", optIn: true },
     ],
   },
   {
@@ -83,9 +84,16 @@ export const PERMISSION_GROUPS = [
 
 export const GRANTABLE_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) => g.actions.map((a) => a.key));
 
+/**
+ * Opt-in permissions: grantable, but no role gets them by default. The Superadmin always has
+ * them and can tick them on an individual Admin or User account (D-017: removing documents
+ * is Superadmin-only for now, grantable later).
+ */
+export const OPT_IN_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) => g.actions.filter((a) => a.optIn).map((a) => a.key));
+
 /** Only a Superadmin ever has these. They cannot be granted. */
 /** "installments.discount": close a balance with a settlement discount (D-008). */
 export const SUPERADMIN_ONLY_PERMISSIONS = ["users.manage", "settings.manage", "audit.viewAll", "installments.discount"];
 
-/** Admin has every grantable permission plus the operational audit view. */
-export const ADMIN_PERMISSIONS = [...GRANTABLE_PERMISSIONS, "audit.view"];
+/** Admin has every grantable permission except the opt-in ones, plus the operational audit view. */
+export const ADMIN_PERMISSIONS = [...GRANTABLE_PERMISSIONS.filter((p) => !OPT_IN_PERMISSIONS.includes(p)), "audit.view"];

@@ -17,9 +17,24 @@ import { SubmitButton } from "@/components/submit-button";
 import { PERMISSION_GROUPS } from "@/lib/permissions-catalog";
 
 const ROLE_HELP = {
-  admin: "Admins can manage customers, bikes, plans, payments and the cash book. They cannot manage staff accounts or system settings.",
+  admin: "Admins can manage customers, bikes, plans, payments, documents and the cash book. They cannot manage staff accounts or system settings.",
   user: "A User can do only what is ticked below.",
 };
+
+// Permissions no role gets by default (e.g. removing documents); shown for Admins too.
+const OPT_IN_GROUPS = PERMISSION_GROUPS.map((g) => ({ ...g, actions: g.actions.filter((a) => a.optIn) })).filter((g) => g.actions.length);
+
+function PermissionCheck({ action, checked }) {
+  return (
+    <div className="flex items-start gap-2">
+      <Checkbox id={`perm-${action.key}`} name="permissions" value={action.key} defaultChecked={checked} className="mt-0.5" />
+      <Label htmlFor={`perm-${action.key}`} className="flex-col items-start gap-0.5 font-normal">
+        {action.label}
+        {action.optIn && <span className="text-xs text-muted-foreground">Sensitive — give only when needed</span>}
+      </Label>
+    </div>
+  );
+}
 
 /**
  * Create (no `user`) or edit (with `user`) an Admin or User account.
@@ -106,16 +121,29 @@ export function StaffForm({ action, user }) {
                 <p className="mb-3 text-sm font-medium">{group.label}</p>
                 <div className="space-y-2.5">
                   {group.actions.map((a) => (
-                    <div key={a.key} className="flex items-center gap-2">
-                      <Checkbox id={`perm-${a.key}`} name="permissions" value={a.key} defaultChecked={granted.has(a.key)} />
-                      <Label htmlFor={`perm-${a.key}`} className="font-normal">
-                        {a.label}
-                      </Label>
-                    </div>
+                    <PermissionCheck key={a.key} action={a} checked={granted.has(a.key)} />
                   ))}
                 </div>
               </div>
             ))}
+          </CardContent>
+        )}
+        {role === "admin" && OPT_IN_GROUPS.length > 0 && (
+          <CardContent className="space-y-3">
+            <p className="text-sm font-medium">Extra access</p>
+            <p className="text-sm text-muted-foreground">Admins do not get these automatically. Tick them only for Admins who need them.</p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {OPT_IN_GROUPS.map((group) => (
+                <div key={group.module} className="rounded-lg border p-4">
+                  <p className="mb-3 text-sm font-medium">{group.label}</p>
+                  <div className="space-y-2.5">
+                    {group.actions.map((a) => (
+                      <PermissionCheck key={a.key} action={a} checked={granted.has(a.key)} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         )}
       </Card>

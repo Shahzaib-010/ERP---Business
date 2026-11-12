@@ -32,7 +32,7 @@ function toPublic(user) {
     name: user.name,
     username: user.username,
     role: user.role,
-    permissions: user.role === "user" ? (user.permissions ?? []) : [],
+    permissions: user.role === "superadmin" ? [] : (user.permissions ?? []),
     isActive: user.isActive,
     lastLoginAt: user.lastLoginAt ?? null,
     createdAt: user.createdAt ?? null,
@@ -73,7 +73,7 @@ export async function getStaff(actor, id) {
 export async function createStaff(actor, input) {
   requirePermission(actor, "users.manage");
   const data = parseOrThrow(createStaffSchema, input);
-  const permissions = data.role === "user" ? sanitizeGrantedPermissions(data.permissions) : [];
+  const permissions = sanitizeGrantedPermissions(data.permissions, data.role);
   const passwordHash = await hashPassword(data.password);
   await connectDB();
 
@@ -134,7 +134,7 @@ export async function updateStaff(actor, id, input) {
     const before = auditSnapshot(user);
     user.name = data.name;
     user.role = data.role;
-    user.permissions = data.role === "user" ? sanitizeGrantedPermissions(data.permissions) : [];
+    user.permissions = sanitizeGrantedPermissions(data.permissions, data.role);
     user.isActive = data.isActive;
     await user.save({ session });
 

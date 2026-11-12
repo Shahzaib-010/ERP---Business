@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ActivityList } from "@/components/app/activity-list";
+import { DocumentsSection } from "@/components/app/documents/documents-section";
 import { BikeStatusBadge, ConditionBadge, OwedBadge, bikeNo } from "@/components/app/bike-ui";
 import { BreadcrumbLabel } from "@/components/app/breadcrumbs";
 import { FlashToast } from "@/components/app/flash-toast";
@@ -165,9 +166,9 @@ async function BikeContent({ params }) {
               { label: "Paid to seller", value: formatPKR(b.purchase.paid) },
               { label: "Still owed", value: formatPKR(b.purchase.payable), tone: b.purchase.payable > 0 ? "text-foreground" : "text-success" },
             ].map((x) => (
-              <div key={x.label} className="bg-card px-5 py-3">
-                <p className="text-xs text-muted-foreground">{x.label}</p>
-                <p className={cn("mt-0.5 text-lg font-semibold tabular-nums", x.tone)}>{x.value}</p>
+              <div key={x.label} className="min-w-0 bg-card px-3 py-3 sm:px-5">
+                <p className="truncate text-xs text-muted-foreground">{x.label}</p>
+                <p className={cn("mt-0.5 text-sm font-semibold whitespace-nowrap tabular-nums sm:text-lg", x.tone)}>{x.value}</p>
               </div>
             ))}
           </div>
@@ -177,9 +178,9 @@ async function BikeContent({ params }) {
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead className="pl-5">Date</TableHead>
+                  <TableHead className="pl-4 sm:pl-5">Date</TableHead>
                   <TableHead className="text-right">Paid</TableHead>
-                  <TableHead className="text-right">Still owed</TableHead>
+                  <TableHead className="hidden text-right sm:table-cell">Still owed</TableHead>
                   <TableHead className="hidden sm:table-cell">Entered by</TableHead>
                   {showActions && <TableHead className="w-16 pr-5" />}
                 </TableRow>
@@ -189,14 +190,18 @@ async function BikeContent({ params }) {
                   const voided = p.status === "voided";
                   return (
                     <TableRow key={p.id} className={voided ? "text-muted-foreground" : undefined}>
-                      <TableCell className="pl-5">
+                      <TableCell className="pl-4 sm:pl-5">
                         <span className={voided ? "line-through" : undefined}>{formatBusinessDate(p.paidAt)}</span>
-                        {p.kind === "at_purchase" && !voided && <span className="ml-2 text-xs text-muted-foreground">at purchase</span>}
+                        {p.kind === "at_purchase" && !voided && <span className="ml-2 hidden text-xs text-muted-foreground sm:inline">at purchase</span>}
                         {voided && <p className="text-xs text-destructive">Voided by {p.voidedBy}: {p.voidReason}</p>}
                         {!voided && p.note && <p className="text-xs text-muted-foreground">{p.note}</p>}
                       </TableCell>
-                      <TableCell className={cn("text-right tabular-nums", voided && "line-through")}>{formatPKR(p.amount)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{p.owedAfter != null ? formatPKR(p.owedAfter) : "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        <span className={cn(voided && "line-through")}>{formatPKR(p.amount)}</span>
+                        {/* Phones: what is still owed, under the amount (its column is hidden) */}
+                        {p.owedAfter != null && <p className="text-xs text-muted-foreground sm:hidden">Owed {formatPKR(p.owedAfter)}</p>}
+                      </TableCell>
+                      <TableCell className="hidden text-right tabular-nums sm:table-cell">{p.owedAfter != null ? formatPKR(p.owedAfter) : "—"}</TableCell>
                       <TableCell className="hidden text-sm text-muted-foreground sm:table-cell">{p.enteredBy}</TableCell>
                       {showActions && (
                         <TableCell className="pr-5 text-right whitespace-nowrap">
@@ -264,6 +269,8 @@ async function BikeContent({ params }) {
           </CardContent>
         )}
       </Card>
+
+      <DocumentsSection actor={actor} ownerType="bike" ownerId={b.id} />
 
       {history && (
         <Card>

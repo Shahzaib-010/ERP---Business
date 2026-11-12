@@ -27,7 +27,7 @@ export default function PortalLayout({ children }) {
         </div>
       </header>
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">{children}</main>
-      <footer className="border-t px-4 py-5 text-center text-sm text-muted-foreground">
+      <footer className="border-t px-4 pt-5 pb-20 text-center text-sm text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
           <PhoneIcon className="size-3.5" /> Questions about your account? Call{" "}
           <a href={`tel:${BUSINESS.contacts[0].phone.replace(/\D/g, "")}`} className="font-medium text-foreground hover:underline">

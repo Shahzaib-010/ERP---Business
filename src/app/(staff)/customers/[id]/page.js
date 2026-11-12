@@ -16,7 +16,10 @@ import {
   ReceiptTextIcon,
   StickyNoteIcon,
   UserIcon,
+  FolderLockIcon,
 } from "lucide-react";
+import { DocumentsSection } from "@/components/app/documents/documents-section";
+import { RECORD_TABS } from "@/components/app/record-tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -88,6 +91,7 @@ async function CustomerContent({ params }) {
   }
   const canEdit = can(actor, "customers.edit");
   const canSeeHistory = can(actor, "audit.view");
+  const canSeeDocuments = can(actor, "documents.view");
   const canSeePlans = can(actor, "installments.view");
   const canSeeBikes = can(actor, "bikes.view");
   const [history, plans, bikes] = await Promise.all([
@@ -159,7 +163,7 @@ async function CustomerContent({ params }) {
       </Card>
 
       <Tabs defaultValue="overview" className="gap-4">
-        <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
+        <TabsList className={RECORD_TABS}>
           <TabsTrigger value="overview">
             <UserIcon /> Overview
           </TabsTrigger>
@@ -172,8 +176,13 @@ async function CustomerContent({ params }) {
             )}
           </TabsTrigger>
           <TabsTrigger value="portal">
-            <KeyRoundIcon /> Portal access
+            <KeyRoundIcon /> Portal<span className="hidden sm:inline"> access</span>
           </TabsTrigger>
+          {canSeeDocuments && (
+            <TabsTrigger value="documents">
+              <FolderLockIcon /> Documents
+            </TabsTrigger>
+          )}
           {canSeeHistory && (
             <TabsTrigger value="history">
               <HistoryIcon /> History
@@ -374,6 +383,12 @@ async function CustomerContent({ params }) {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {canSeeDocuments && (
+          <TabsContent value="documents">
+            <DocumentsSection actor={actor} ownerType="customer" ownerId={c.id} />
+          </TabsContent>
+        )}
 
         {canSeeHistory && (
           <TabsContent value="history">

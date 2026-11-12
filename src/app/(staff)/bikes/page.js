@@ -72,7 +72,7 @@ async function BikesContent({ searchParams }) {
 
       <Card className="gap-0 overflow-hidden py-0">
         <div className="flex flex-col gap-3 border-b p-3 lg:flex-row lg:items-center lg:justify-between lg:p-4">
-          <nav className="flex gap-1 overflow-x-auto rounded-lg bg-muted p-1" aria-label="Filter">
+          <nav className="no-scrollbar flex gap-1 overflow-x-auto rounded-lg bg-muted p-1" aria-label="Filter">
             {TABS.map((t) => (
               <Link
                 key={t.key}
@@ -134,7 +134,7 @@ async function BikesContent({ searchParams }) {
                 <TableHead className="hidden md:table-cell">Reg. / engine</TableHead>
                 <TableHead className="hidden text-right lg:table-cell">Bought for</TableHead>
                 <TableHead className="hidden text-right sm:table-cell">Owed to seller</TableHead>
-                <TableHead className="pr-4">Status</TableHead>
+                <TableHead className="hidden pr-4 sm:table-cell">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -144,14 +144,20 @@ async function BikesContent({ searchParams }) {
                     <Link href={`/bikes/${b.id}`} className="font-mono font-semibold group-hover:underline">
                       {bikeNo(b.bikeNumber)}
                     </Link>
-                    <p className="text-xs text-muted-foreground">{formatBusinessDate(b.purchaseDate)}</p>
+                    <p className="hidden text-xs text-muted-foreground sm:block">{formatBusinessDate(b.purchaseDate)}</p>
                   </TableCell>
-                  <TableCell className="max-w-[16rem]">
+                  <TableCell className="max-w-62 pr-4 sm:max-w-[16rem] sm:pr-2">
                     <Link href={`/bikes/${b.id}`} className="flex items-center gap-2">
                       <span className="truncate font-medium">{b.label}</span>
-                      <ConditionBadge condition={b.condition} />
+                      <ConditionBadge condition={b.condition} className="hidden sm:inline-flex" />
                     </Link>
                     <p className="truncate text-xs text-muted-foreground">from {b.sellerName}</p>
+                    {/* Phones: status, buyer and amount owed (their columns are hidden) */}
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:hidden">
+                      <BikeStatusBadge status={b.status} />
+                      {b.payable > 0 && <span className="font-medium">Owe seller {formatPKR(b.payable)}</span>}
+                      {b.sale?.customer && <span className="truncate text-muted-foreground">to {b.sale.customer.name}</span>}
+                    </div>
                   </TableCell>
                   <TableCell className="hidden font-mono text-xs md:table-cell">
                     {b.registrationNumber || "—"}
@@ -161,7 +167,7 @@ async function BikesContent({ searchParams }) {
                   <TableCell className={cn("hidden text-right tabular-nums sm:table-cell", b.payable > 0 ? "font-medium" : "text-muted-foreground")}>
                     {b.payable > 0 ? formatPKR(b.payable) : "—"}
                   </TableCell>
-                  <TableCell className="pr-4">
+                  <TableCell className="hidden pr-4 sm:table-cell">
                     <BikeStatusBadge status={b.status} />
                     {b.sale?.customer && (
                       <Link href={`/customers/${b.sale.customer.id}`} className="mt-1 block max-w-[10rem] truncate text-xs text-muted-foreground hover:underline">

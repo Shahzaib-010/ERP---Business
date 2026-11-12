@@ -20,6 +20,11 @@ export const AUDIT_ACTION_LABELS = {
   "bike.sell_cash": "Sold bike for cash",
   "bike.sell_installment": "Sold bike on installments",
   "bike.sale_cancel": "Cancelled bike sale",
+  "document.upload": "Uploaded document",
+  "document.view": "Opened document",
+  "document.remove": "Moved document to bin",
+  "document.restore": "Restored document",
+  "document.erase": "Permanently erased document",
   "cashbook.create": "Added cash book entry",
   "cashbook.void": "Voided cash book entry",
   "staff.bootstrap_superadmin": "Created Superadmin",
@@ -75,6 +80,10 @@ export const AUDIT_FIELD_LABELS = {
   type: "Type",
   category: "Category",
   description: "Description",
+  label: "Label",
+  fileName: "File",
+  size: "Size",
+  reason: "Reason",
 };
 
 export function auditActionLabel(action) {

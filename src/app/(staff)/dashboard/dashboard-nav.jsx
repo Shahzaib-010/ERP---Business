@@ -12,7 +12,7 @@ export function DashboardTabs({ current, show }) {
   ].filter((t) => t.visible);
   if (tabs.length < 2) return null;
   return (
-    <nav className="-mb-px flex gap-6 overflow-x-auto border-b" aria-label="Dashboards">
+    <nav className="no-scrollbar -mb-px flex gap-5 overflow-x-auto border-b sm:gap-6" aria-label="Dashboards">
       {tabs.map((t) => (
         <Link
           key={t.key}
@@ -35,7 +35,7 @@ export function DashboardTabs({ current, show }) {
 /** This month | 3 months | 12 months | This year, as links on the given page. */
 export function PeriodTabs({ period, basePath }) {
   return (
-    <nav className="flex gap-1 overflow-x-auto rounded-lg bg-muted p-1" aria-label="Period">
+    <nav className="no-scrollbar flex gap-1 overflow-x-auto rounded-lg bg-muted p-1" aria-label="Period">
       {PERIODS.map((p) => (
         <Link
           key={p.value}
@@ -43,7 +43,7 @@ export function PeriodTabs({ period, basePath }) {
           scroll={false}
           aria-current={period === p.value ? "page" : undefined}
           className={cn(
-            "rounded-md px-3 py-1 text-sm whitespace-nowrap transition-colors",
+            "rounded-md px-2.5 py-1 text-[13px] whitespace-nowrap transition-colors sm:px-3 sm:text-sm",
             period === p.value ? "bg-background font-medium shadow-xs" : "text-muted-foreground hover:text-foreground",
           )}
         >

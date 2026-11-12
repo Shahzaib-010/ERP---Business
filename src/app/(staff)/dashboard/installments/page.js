@@ -184,14 +184,14 @@ async function Content({ searchParams }) {
               </div>
             </div>
           </div>
-          <div className="grid gap-px border-t bg-border sm:grid-cols-3">
-            <div className="bg-card px-6 py-4">
+          <div className="grid grid-cols-2 gap-px border-t bg-border sm:grid-cols-3 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
+            <div className="min-w-0 bg-card px-4 py-3.5 sm:px-6 sm:py-4">
               <Figure label="Overdue now" value={d.position.overdue} sub={`${d.position.lateCount} late ${d.position.lateCount === 1 ? "plan" : "plans"}`} />
             </div>
-            <div className="bg-card px-6 py-4">
+            <div className="min-w-0 bg-card px-4 py-3.5 sm:px-6 sm:py-4">
               <Figure label="Due in the next 30 days" value={d.position.dueNext30} sub={`${d.position.dueNext30Count} ${d.position.dueNext30Count === 1 ? "payment" : "payments"} expected`} />
             </div>
-            <div className="bg-card px-6 py-4">
+            <div className="min-w-0 bg-card px-4 py-3.5 sm:px-6 sm:py-4">
               <Figure label={`Collected (${d.range.label.toLowerCase()})`} value={d.kpis.collected.value} previous={d.kpis.collected.previous} sub={`${d.kpis.collected.count} payments`} />
             </div>
           </div>

@@ -21,6 +21,7 @@ export async function startTestDb() {
   await import("@/server/models/Bike");
   await import("@/server/models/SellerPayment");
   await import("@/server/models/FinancialTransaction");
+  await import("@/server/models/Document");
   await connectDB();
   // Build unique indexes before tests rely on them.
   for (const model of Object.values(mongoose.models)) await model.init();

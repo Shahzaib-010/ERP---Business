@@ -12,7 +12,10 @@ import {
   ReceiptTextIcon,
   UserIcon,
   UserRoundCheckIcon,
+  FolderLockIcon,
 } from "lucide-react";
+import { DocumentsSection } from "@/components/app/documents/documents-section";
+import { RECORD_TABS } from "@/components/app/record-tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,10 +77,10 @@ function scheduleText(s) {
 
 function Stat({ label, value, sub, tone }) {
   return (
-    <div className="bg-card px-5 py-4">
+    <div className="min-w-0 bg-card px-4 py-3.5 sm:px-5 sm:py-4">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={cn("mt-1 text-xl font-semibold tabular-nums sm:text-2xl", tone)}>{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+      <p className={cn("mt-1 truncate text-lg font-semibold tabular-nums sm:text-2xl", tone)}>{value}</p>
+      {sub && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{sub}</p>}
     </div>
   );
 }
@@ -179,7 +182,7 @@ async function PlanContent({ params }) {
 
       {/* Figures */}
       <Card className="gap-0 overflow-hidden py-0">
-        <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px bg-border lg:grid-cols-4">
           <Stat label="Total price" value={formatPKR(plan.agreedTotal)} sub={plan.terms.cashPrice != null ? `Cash price ${formatPKR(plan.terms.cashPrice)}` : null} />
           <Stat label="Received" value={formatPKR(progress.paid)} sub={progress.discount ? `+ ${formatPKR(progress.discount)} discount` : `${plan.ledger.filter((l) => l.status === "posted" && l.kind !== "discount").length} payments`} />
           <Stat label="Balance" value={formatPKR(plan.balance)} tone={plan.balance === 0 ? "text-success" : undefined} sub={plan.completedAt ? `Completed ${formatDateTime(plan.completedAt)}` : null} />
@@ -196,7 +199,7 @@ async function PlanContent({ params }) {
       </Card>
 
       <Tabs defaultValue="payments" className="gap-4">
-        <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
+        <TabsList className={RECORD_TABS}>
           <TabsTrigger value="payments">
             <ReceiptTextIcon /> Payments
           </TabsTrigger>
@@ -206,6 +209,11 @@ async function PlanContent({ params }) {
           <TabsTrigger value="agreement">
             <FileSignatureIcon /> Agreement
           </TabsTrigger>
+          {can(actor, "documents.view") && (
+            <TabsTrigger value="documents">
+              <FolderLockIcon /> Documents
+            </TabsTrigger>
+          )}
           {history && (
             <TabsTrigger value="history">
               <HistoryIcon /> History
@@ -231,10 +239,10 @@ async function PlanContent({ params }) {
                 <TableHeader className="bg-muted/50">
                   <TableRow>
                     <TableHead className="pl-4">Date</TableHead>
-                    <TableHead>Receipt</TableHead>
+                    <TableHead className="hidden sm:table-cell">Receipt</TableHead>
                     <TableHead className="hidden sm:table-cell">Type</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
+                    <TableHead className="hidden text-right sm:table-cell">Balance</TableHead>
                     <TableHead className="hidden md:table-cell">Entered by</TableHead>
                     {showActions && <TableHead className="w-16 pr-4" />}
                   </TableRow>
@@ -252,18 +260,27 @@ async function PlanContent({ params }) {
                             </p>
                           )}
                           {!voided && p.note && <p className="max-w-[14rem] truncate text-xs text-muted-foreground">{p.note}</p>}
+                          {/* Phones: receipt and type under the date (their columns are hidden) */}
+                          <p className="text-xs text-muted-foreground sm:hidden">
+                            {PAYMENT_KIND_LABELS[p.kind]}
+                            {p.receiptNumber != null && <span className="font-mono"> · #{p.receiptNumber}</span>}
+                          </p>
                         </TableCell>
-                        <TableCell className="font-mono text-xs">{p.receiptNumber ?? "—"}</TableCell>
+                        <TableCell className="hidden font-mono text-xs sm:table-cell">{p.receiptNumber ?? "—"}</TableCell>
                         <TableCell className="hidden sm:table-cell">
                           <Badge variant={p.kind === "installment" ? "outline" : "secondary"} className={p.kind === "discount" ? "bg-warning/15" : undefined}>
                             {PAYMENT_KIND_LABELS[p.kind]}
                           </Badge>
                         </TableCell>
-                        <TableCell className={cn("text-right font-medium tabular-nums", voided && "line-through")}>
-                          {p.kind === "discount" ? "−" : ""}
-                          {formatPKR(p.amount)}
+                        <TableCell className="text-right tabular-nums">
+                          <span className={cn("font-medium", voided && "line-through")}>
+                            {p.kind === "discount" ? "−" : ""}
+                            {formatPKR(p.amount)}
+                          </span>
+                          {/* Phones: balance under the amount (its column is hidden) */}
+                          {p.balanceAfter != null && <p className="text-xs text-muted-foreground sm:hidden">Bal. {formatPKR(p.balanceAfter)}</p>}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">{p.balanceAfter != null ? formatPKR(p.balanceAfter) : "—"}</TableCell>
+                        <TableCell className="hidden text-right tabular-nums sm:table-cell">{p.balanceAfter != null ? formatPKR(p.balanceAfter) : "—"}</TableCell>
                         <TableCell className="hidden text-sm text-muted-foreground md:table-cell">{p.enteredBy}</TableCell>
                         {showActions && (
                           <TableCell className="pr-4 text-right whitespace-nowrap">
@@ -392,6 +409,12 @@ async function PlanContent({ params }) {
             )}
           </div>
         </TabsContent>
+
+        {can(actor, "documents.view") && (
+          <TabsContent value="documents">
+            <DocumentsSection actor={actor} ownerType="plan" ownerId={plan.id} />
+          </TabsContent>
+        )}
 
         {history && (
           <TabsContent value="history">

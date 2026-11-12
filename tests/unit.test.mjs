@@ -53,6 +53,20 @@ test("sanitizeGrantedPermissions drops non-grantable keys and duplicates", () =>
   );
 });
 
+test("opt-in permission (documents.remove): Superadmin only by default, grantable per account (D-017)", () => {
+  assert.ok(can(staff("superadmin"), "documents.remove"));
+  assert.equal(can(staff("admin"), "documents.remove"), false);
+  assert.ok(can(staff("admin"), "documents.upload"), "Admins keep the normal document permissions");
+  assert.ok(can(staff("admin", ["documents.remove"]), "documents.remove"));
+  assert.equal(can(staff("user"), "documents.remove"), false);
+  assert.ok(can(staff("user", ["documents.remove"]), "documents.remove"));
+  // An Admin account stores only opt-in extras; the rest come with the role.
+  assert.deepEqual(sanitizeGrantedPermissions(["documents.remove", "payments.create", "users.manage"], "admin"), ["documents.remove"]);
+  assert.deepEqual(sanitizeGrantedPermissions(["documents.remove"], "superadmin"), []);
+  // Extra grants never leak Superadmin-only powers to an Admin.
+  assert.equal(can(staff("admin", ["users.manage"]), "users.manage"), false);
+});
+
 test("redact removes secrets and masks CNIC at any depth", () => {
   const out = redact({
     name: "A",

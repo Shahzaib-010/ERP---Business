@@ -180,3 +180,11 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Horizontal scrollers (tab rows, filter pills) without a visible scrollbar. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

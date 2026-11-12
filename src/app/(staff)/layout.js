@@ -44,7 +44,8 @@ async function StaffShell({ children }) {
               addCashEntry: can(actor, "transactions.create"),
             }}
           />
-          <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          {/* pb-24: room below the content so floating badges (e.g. the host's) never cover the last rows */}
+          <div className="flex-1 px-4 pt-6 pb-24 sm:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-7xl">{children}</div>
           </div>
         </SidebarInset>

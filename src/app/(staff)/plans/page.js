@@ -72,7 +72,7 @@ async function PlansContent({ searchParams }) {
 
       <Card className="gap-0 overflow-hidden py-0">
         <div className="flex flex-col gap-3 border-b p-3 lg:flex-row lg:items-center lg:justify-between lg:p-4">
-          <nav className="flex gap-1 overflow-x-auto rounded-lg bg-muted p-1" aria-label="Filter by status">
+          <nav className="no-scrollbar flex gap-1 overflow-x-auto rounded-lg bg-muted p-1" aria-label="Filter by status">
             {TABS.map((t) => (
               <Link
                 key={t.key}
@@ -139,7 +139,7 @@ async function PlansContent({ searchParams }) {
                 <TableHead>Customer &amp; item</TableHead>
                 <TableHead className="hidden text-right md:table-cell">Total</TableHead>
                 <TableHead className="hidden w-48 lg:table-cell">Paid</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
+                <TableHead className="text-right max-sm:pr-4">Balance</TableHead>
                 <TableHead className="hidden pr-4 sm:table-cell">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -150,9 +150,9 @@ async function PlansContent({ searchParams }) {
                     <Link href={`/plans/${p.id}`} className="font-mono font-semibold tabular-nums group-hover:underline">
                       #{p.accountNumber}
                     </Link>
-                    <p className="text-xs text-muted-foreground">{formatBusinessDate(p.agreementDate)}</p>
+                    <p className="hidden text-xs text-muted-foreground sm:block">{formatBusinessDate(p.agreementDate)}</p>
                   </TableCell>
-                  <TableCell className="max-w-[16rem]">
+                  <TableCell className="max-w-38 sm:max-w-[16rem]">
                     <Link href={`/plans/${p.id}`} className="block truncate font-medium">
                       {p.customer?.name}
                     </Link>
@@ -165,7 +165,7 @@ async function PlansContent({ searchParams }) {
                       <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">{p.percent}%</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-medium tabular-nums">
+                  <TableCell className="text-right font-medium tabular-nums max-sm:pr-4">
                     {formatPKR(p.balance)}
                     <div className="sm:hidden">
                       <PlanStatusBadge status={p.status} overdue={p.overdue} className="mt-1" />

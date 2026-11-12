@@ -72,7 +72,7 @@ export function Figure({ label, value, money = true, previous, goodWhen = "up", 
     <div className={className}>
       <p className="text-xs text-muted-foreground">{label}</p>
       <div className="mt-1 flex flex-wrap items-center gap-2">
-        <span className={cn("font-semibold tracking-tight tabular-nums", big ? "text-2xl" : "text-lg", value < 0 && "text-destructive")}>
+        <span className={cn("font-semibold tracking-tight whitespace-nowrap tabular-nums", big ? "text-2xl" : "text-base sm:text-lg", value < 0 && "text-destructive")}>
           <CountUp value={value} prefix={money ? "Rs " : ""} />
         </span>
         {previous !== undefined && <DeltaChip value={value} previous={previous} goodWhen={goodWhen} />}

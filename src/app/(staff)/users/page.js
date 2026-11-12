@@ -95,6 +95,9 @@ async function StaffTable() {
                         {u.permissions.length} permission{u.permissions.length === 1 ? "" : "s"}
                       </p>
                     )}
+                    {u.role === "admin" && u.permissions.length > 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">+ {u.permissions.length} extra</p>
+                    )}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     {u.isActive ? (

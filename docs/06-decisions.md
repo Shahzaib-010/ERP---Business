@@ -30,7 +30,7 @@ confirmed yet), **Open** (still needs an answer).
   the session render inside `<Suspense>` boundaries (see the bundled guide
   `node_modules/next/dist/docs/01-app/02-guides/authentication-with-cache-components.md`).
 
-## D-002 — Free hosting — Proposed (2026-11-06)
+## D-002 — Free hosting — Accepted (2026-11-12, see D-016)
 
 | Need | Choice | Notes |
 |---|---|---|
@@ -304,3 +304,42 @@ the logo mark, "in stock" dots, text selection and the landing page's dark secti
   bike sales value per month; stock by make and by age; oldest stock, sellers still owed,
   recent sales.
 - Tabs and figures appear only for modules the person may see.
+
+## D-016 — Deployment and backups — Decided (2026-11-12)
+
+- **App:** Netlify Free, deployed from `main`, served on the owner's own subdomain (GoDaddy
+  CNAME to the Netlify site; free HTTPS). `netlify.toml` sets `publish = ".next"`, Node 22 and
+  declares `@netlify/plugin-nextjs` (installed as a devDependency): without it the build ran
+  but no server functions were deployed and every page was a Netlify 404.
+- **Database:** MongoDB Atlas M0, Mumbai, database `bike_business`; network access
+  `0.0.0.0/0` (Netlify has no fixed IPs; protected by TLS and a generated password).
+- **Secrets** live only in Netlify environment variables and in local `.env.local` /
+  `.env.prod` (git-ignored; `.env.prod` is not auto-loaded by Next.js). The first Superadmin
+  on production is created with `npm run create-superadmin:prod`.
+- **Files:** Cloudflare R2, private buckets `bike-docs` (live), `bike-docs-dev` (local),
+  `bike-backups`; one access key per bucket.
+- **Backups (3-2-1, required before real data):** nightly encrypted `mongodump` to R2 and
+  Backblaze B2; weekly copy of documents to B2; weekly automated restore check; manual
+  backup before each deploy; Healthchecks.io alert if a backup is missed. Not built yet.
+
+## D-017 — Private documents — Decided (2026-11-12)
+
+- Documents attach to customers, installment plans and bikes; optional, several per record,
+  each with a group and a label. Groups: identity, agreement, bike purchase/seller,
+  registration/transfer, bike sale/buyer, transaction proof, bike photo (D-008), general.
+- **Limit 10 MB per file**; PDF, JPG/JPEG, PNG, WEBP only. The real file signature is
+  checked after upload, not just the name or declared type. Phone photos are shrunk in the
+  browser before upload.
+- The browser uploads straight to R2 with a 10-minute signed URL; files open through
+  `/api/documents/:id`, which checks the session and permissions, writes an audit entry
+  (security scope) and redirects to a 60-second signed URL. Storage keys are random and
+  never shown; signed URLs are never logged or stored.
+- Viewing needs `documents.view` plus the record's own view permission; uploading needs
+  `documents.upload`. Customers (portal) never see documents.
+- **Removing is Superadmin-only for now** through the new opt-in permission
+  `documents.remove`. Opt-in permissions are not part of any role by default; the
+  Superadmin can tick them on an individual Admin or User account later.
+- Removing moves a document to a **bin** (hidden, file kept, restorable). **Erase
+  permanently** is a separate step from the bin only (reason + typing ERASE): the file is
+  deleted from storage and the metadata row stays as the audit trail. No automatic
+  expiry of the bin for now (the 30-day auto-erase option was not chosen).
