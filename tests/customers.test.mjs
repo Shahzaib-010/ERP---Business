@@ -44,6 +44,28 @@ const base = {
 describe("customer records", () => {
   let aliId;
 
+  test("WhatsApp number is stored as digits, searchable, cleared when emptied, and validated", async () => {
+    const { id } = await mods.customers.createCustomer(owner, {
+      name: "Wasim Akram",
+      cnic: "42101-5550001-1",
+      phones: ["0300-1112223"],
+      whatsapp: "0345 9998887",
+    });
+    let detail = await mods.customers.getCustomer(owner, id);
+    assert.equal(detail.whatsapp, "03459998887");
+    const { items } = await mods.customers.listCustomers(owner, { q: "0345-999" });
+    assert.ok(items.some((c) => c.id === id), "found by WhatsApp number");
+
+    await mods.customers.updateCustomer(owner, id, { ...detail, whatsapp: "" });
+    detail = await mods.customers.getCustomer(owner, id);
+    assert.equal(detail.whatsapp, "");
+
+    const err = await mods.customers
+      .createCustomer(owner, { name: "Bad Number", cnic: "42101-5550002-1", whatsapp: "12" })
+      .catch((e) => e);
+    assert.ok(err.fieldErrors?.whatsapp, "too-short WhatsApp number rejected");
+  });
+
   test("create normalizes CNIC and phones and writes an audit row without the full CNIC", async () => {
     const { id } = await mods.customers.createCustomer(owner, base);
     aliId = id;
@@ -51,6 +73,7 @@ describe("customer records", () => {
     assert.equal(doc.cnicNormalized, "3130312345671");
     assert.deepEqual(doc.phones, ["03001234567"], "blank and duplicate phones are dropped");
     assert.equal(doc.caste, undefined, "empty optional fields are not stored");
+    assert.equal(doc.whatsapp, undefined, "no WhatsApp number unless given");
 
     const audit = await mods.AuditLog.findOne({ action: "customer.create", entityId: doc._id }).lean();
     assert.ok(audit, "audit row written");
@@ -139,6 +162,20 @@ describe("customer search", () => {
   test("by part of the name, any case", async () => {
     assert.deepEqual(names(await mods.customers.searchCustomers(viewer, "raz")), ["Ali Raza"]);
     assert.deepEqual(names(await mods.customers.searchCustomers(viewer, "BILAL")), ["Bilal Ahmed"]);
+  });
+
+  test("newest customers come first, at most the limit, and need customers.view", async () => {
+    const created = [];
+    for (const [i, name] of ["Newest One", "Newest Two", "Newest Three", "Newest Four", "Newest Five"].entries()) {
+      created.push(await mods.customers.createCustomer(owner, { name, cnic: `61101-777000${i}-1` }));
+    }
+    const list = await mods.customers.recentCustomers(viewer, { limit: 4 });
+    assert.deepEqual(
+      list.map((c) => c.name),
+      ["Newest Five", "Newest Four", "Newest Three", "Newest Two"],
+    );
+    assert.ok(list.every((c) => c.cnicMasked && !("cnic" in c)), "only the masked CNIC is returned");
+    await assert.rejects(mods.customers.recentCustomers({ kind: "staff", id: "x", role: "user", permissions: [], isActive: true }));
   });
 
   test("by father's name", async () => {

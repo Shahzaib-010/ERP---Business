@@ -2,6 +2,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AppBreadcrumbs } from "./breadcrumbs";
 import { CommandMenu } from "./command-menu";
+import { NotificationBell } from "./notification-bell";
 
 export function SiteHeader({ allowed, can }) {
   return (
@@ -11,8 +12,9 @@ export function SiteHeader({ allowed, can }) {
       <div className="min-w-0 flex-1">
         <AppBreadcrumbs />
       </div>
-      <div className="w-auto shrink-0 sm:w-auto">
+      <div className="flex shrink-0 items-center gap-1.5">
         <CommandMenu allowed={allowed} can={can} />
+        <NotificationBell />
       </div>
     </header>
   );

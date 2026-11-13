@@ -349,6 +349,26 @@ async function PlanContent({ params }) {
                 <Term label="Cash price">{plan.terms.cashPrice != null ? formatPKR(plan.terms.cashPrice) : null}</Term>
                 <Term label="Markup">{plan.terms.markup != null ? formatPKR(plan.terms.markup) : null}</Term>
                 <Term label="Total price">{formatPKR(plan.terms.agreedTotal)}</Term>
+                <Term label={plan.profit.costSource === "bike" ? "Cost to us (bike purchase)" : "Cost to us"}>
+                  {plan.profit.cost != null ? (
+                    <>
+                      {formatPKR(plan.profit.cost)}
+                      {plan.profit.paidFromCash && <span className="block text-xs font-normal text-muted-foreground">Paid from business cash</span>}
+                    </>
+                  ) : can(actor, "installments.edit") ? (
+                    <Link href={`/plans/${plan.id}/edit`} className="text-xs font-normal text-muted-foreground underline underline-offset-4 hover:text-foreground">
+                      Not entered, add it
+                    </Link>
+                  ) : null}
+                </Term>
+                <Term label="Profit on this sale">
+                  {plan.profit.profit != null ? (
+                    <span className={plan.profit.profit < 0 ? "text-destructive" : "text-success"}>
+                      {formatPKR(plan.profit.profit)}
+                      {plan.profit.discount > 0 && <span className="block text-xs font-normal text-muted-foreground">after {formatPKR(plan.profit.discount)} discount</span>}
+                    </span>
+                  ) : null}
+                </Term>
                 <Term label="Advance">{formatPKR(plan.terms.advanceAmount)}</Term>
                 <Term label="Balance after advance">{formatPKR(plan.terms.agreedTotal - plan.terms.advanceAmount)}</Term>
                 <Term label="Agreed schedule">{scheduleText(plan.terms.schedule)}</Term>

@@ -206,6 +206,19 @@ Supersedes D-006 answers 2 and 8.
 - **3D showroom (`/showroom`)**: separate page with an interactive 3D bike (rotate,
   zoom, change model and colour). The bike is drawn in code (three.js); there are no
   licensed model files. `?model=<id>` opens a given model.
+- **Public contact (2026-11-13)**: the public pages show only the owner, Muhammad Anwar,
+  0300-8678024 (`BUSINESS.owner`). The landing page also has a model comparison, a
+  new / used / sell-your-bike section and a showroom FAQ. Added `/about`, `/contact`,
+  `/privacy` and `/terms`; the owner should review the legal text before going live.
+  The map uses the showroom's plus code `C8C3+F8H, Rahim Yar Khan` (`BUSINESS.mapLocation`).
+- **Speed (2026-11-13)**: the bell and the Ctrl+K search read from plain GET routes
+  (`/api/notifications`, `/api/search`), never Server Actions, because the router runs
+  Server Actions one at a time and link clicks wait behind them. The session is resolved in
+  one database round trip (aggregate + `$lookup`). Open: Netlify functions and Atlas
+  (Mumbai) should be in the same region; every database round trip crosses that distance.
+- **Customer WhatsApp (2026-11-13)**: optional `whatsapp` number on the customer, separate
+  from the phone numbers (digits only, searchable, an import column). The profile shows a
+  WhatsApp button that opens a chat via `wa.me` (Pakistani `03…` numbers become `923…`).
 - Models, specs and colours on both pages are **placeholder demo data** in
   `src/lib/showroom.js`, to be replaced with the real bikes.
 - Colours (supersedes the blue in D-010): warm stone neutrals, charcoal for primary
@@ -343,3 +356,52 @@ the logo mark, "in stock" dots, text selection and the landing page's dark secti
   permanently** is a separate step from the bin only (reason + typing ERASE): the file is
   deleted from storage and the metadata row stays as the audit trail. No automatic
   expiry of the bin for now (the 30-day auto-erase option was not chosen).
+
+## D-018 — Notifications, daily report and import — Decided (2026-11-13)
+
+- **Notification bell** (header): "needs attention" alerts worked out live (overdue plans,
+  installments due today and in the next 3 days, money owed to sellers), shown only for
+  modules the person may see; plus **team activity** from the audit log (other staff's
+  actions in the last 14 days, needs `audit.view`). Corrections and removals (voids,
+  discounts, schedule changes, documents to bin/erased) are highlighted. Unread = after the
+  person's `notificationsSeenAt`. Refreshes every 3 minutes while the tab is visible and on
+  page changes; new activity also shows a toast. No external messages yet (email, Telegram
+  and WhatsApp come later).
+- **Toasts**: one minimal style app-wide (neutral card, small tinted icon), top-centre.
+- **Daily report** (`/reports/daily`, needs `transactions.view`): opening cash, money in/out
+  by type, closing cash, every cash movement, new customers/plans/bikes (each only with its
+  own view permission), and the activity log with a per-staff count (only with
+  `audit.view`). Print / PDF via an A4 print view (PDF = the browser's "Save as PDF"), and
+  an Excel (.xlsx) download.
+- **Customer import** (`/customers/import`, needs `customers.create`): Excel (.xlsx), CSV,
+  or a table pasted from Excel/Word (Word files and old .xls are not read directly).
+  Columns are matched by name with manual override; every row is checked with the same
+  rules as the form; rows whose CNIC exists or repeats in the file are skipped, never
+  overwritten; saved in chunks of 50 through `createCustomer` (each audited); max 1000 rows.
+  Plans and past payments are not imported yet (they need the owner's field mapping).
+- **Toasts** (supersedes the toast line above): tinted per type (green success, amber warning,
+  blue info, red error) with an outlined icon, coloured title and an always-visible close
+  button; slide/scale/un-blur in, quick fade out.
+
+## D-019 — Profit — Decided (2026-11-13)
+
+Answers open decision 10. Profit is what the business **earned**, not cash movement.
+
+- **Gross profit** = sales − cost of the items sold − settlement discounts.
+  **Net profit** = gross profit + other income − operating expenses.
+- **Never profit:** owner investment and withdrawals, installment collections (the sale was
+  already counted), payments to bike sellers and payments for plan items (their cost is
+  already subtracted once).
+- **When:** the whole profit of a sale counts on the sale date (cash bike sale date, or the
+  plan's agreement date), the same as Sales. The dashboard also shows how much of that
+  profit is still inside customer balances (profit × balance ÷ total price).
+- **Cost of an item:** a bike from the register = its purchase price. Any other plan item =
+  the new optional plan field **"Cost to us"** (`installmentPlans.itemCost`). Plans with no
+  known cost are left out of profit and the dashboard says how many.
+- **"Paid from business cash"** (tick on the plan form) records the cost as a cash-out row
+  in `financialTransactions` with type `item_purchase` and the plan's id, dated on the
+  agreement date. It lowers cash in hand but is not an expense. It can be voided from the
+  cash book like other manual rows; ticking it again on the plan's edit page records a new
+  one. Staff must not also enter it as an expense.
+- Dashboard → Overview has a **Profit** card (statement for the chosen period, change vs the
+  previous period) and a 12-month gross/net profit chart.

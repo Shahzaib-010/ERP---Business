@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { PlusIcon, Trash2Icon, UserRoundCheckIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,6 +20,57 @@ export const moneyValue = (s) => {
   const d = String(s ?? "").replace(/\D/g, "");
   return d ? Number(d) : 0;
 };
+
+/**
+ * D-019: what the business paid for the item (for profit) and whether that came out of
+ * business cash (then a cash-out entry linked to the plan is recorded). Controlled.
+ * alreadyPaid = a cash-out entry exists, so the tick is shown as done.
+ */
+export function ItemCostFields({ total, value, onChange, paid, onPaidChange, error, alreadyPaid }) {
+  const cost = moneyValue(value);
+  const profit = cost && total ? total - cost : null;
+  return (
+    <div className="mt-5 grid gap-5 border-t pt-5 sm:grid-cols-2">
+      <MoneyField
+        name="itemCost"
+        label="Cost to us"
+        value={value}
+        onChange={onChange}
+        error={error}
+        hint={profit !== null ? `Profit on this sale: Rs ${profit.toLocaleString("en-PK")}` : "What you paid for the item. Used for profit."}
+      />
+      <div className="flex items-start gap-2.5 sm:pt-7">
+        {alreadyPaid ? (
+          <>
+            <Checkbox id="itemCostPaidFromCash" checked disabled className="mt-0.5" />
+            <Label htmlFor="itemCostPaidFromCash" className="flex-col items-start gap-0.5 font-normal">
+              Paid from business cash
+              <span className="text-xs text-muted-foreground">
+                Rs {alreadyPaid.toLocaleString("en-PK")} is in the cash book. To change it, void that entry in the cash book, then tick this again.
+              </span>
+            </Label>
+          </>
+        ) : (
+          <>
+            <Checkbox
+              id="itemCostPaidFromCash"
+              name="itemCostPaidFromCash"
+              checked={paid}
+              onCheckedChange={(v) => onPaidChange(v === true)}
+              className="mt-0.5"
+            />
+            <Label htmlFor="itemCostPaidFromCash" className="flex-col items-start gap-0.5 font-normal">
+              Paid from business cash
+              <span className="text-xs text-muted-foreground">
+                Records the cost as money out in the cash book, on the agreement date. Don&apos;t also add it as an expense.
+              </span>
+            </Label>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /** Money input with a "Rs" prefix and thousands separators. Controlled or uncontrolled. */
 export function MoneyField({ name, label, error, hint, value, onChange, defaultValue, required, id }) {

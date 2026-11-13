@@ -13,6 +13,8 @@ const customerSchema = new mongoose.Schema(
     // 13 digits, no dashes. Unique: the CNIC is the customer's identity.
     cnicNormalized: { type: String, required: true, match: /^\d{13}$/ },
     phones: { type: [String], default: [] },
+    // Digits only, as typed (e.g. "03001234567"). May differ from the phone numbers.
+    whatsapp: { type: String, match: /^\d{7,15}$/ },
     homeAddress: { type: String, trim: true, maxlength: 300 },
     collectionAddress: { type: String, trim: true, maxlength: 300 },
     businessAddress: { type: String, trim: true, maxlength: 300 },

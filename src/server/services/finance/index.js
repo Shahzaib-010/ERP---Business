@@ -56,6 +56,106 @@ async function salesTotals(from, to) {
   };
 }
 
+// ---------- profit (D-019) ----------
+//  Sales (counted on the sale day)  − cost of the items sold  − settlement discounts = gross profit
+//  gross profit + other income − operating expenses = net profit
+// Owner investment / withdrawal, installment collections, seller payments and item purchases
+// are cash movements, not profit. Plans whose item cost is unknown are left out (and counted).
+
+const monthKeyOf = (d) => new Date(d).toISOString().slice(0, 7);
+
+/** share of `profit` still inside `balance` of `total`, in whole rupees (exact integer math). */
+function shareOf(profit, balance, total) {
+  if (!total || !profit || !balance) return 0;
+  return Number((BigInt(profit) * BigInt(balance)) / BigInt(total));
+}
+
+function emptyProfit() {
+  return { sales: 0, cost: 0, discounts: 0, gross: 0, otherIncome: 0, expenses: 0, net: 0, uncollected: 0, missingCount: 0, missingSales: 0, salesCount: 0 };
+}
+
+/** { "2026-10": { sales, cost, discounts, gross, otherIncome, expenses, net, uncollected, missing… } } for [from, to). */
+async function profitByMonth(from, to) {
+  const [plans, cashBikes, discounts, manual] = await Promise.all([
+    InstallmentPlan.find({ status: { $ne: "cancelled" }, "terms.agreementDate": { $gte: from, $lt: to } })
+      .select("terms.agreementDate terms.agreedTotal itemCost relatedBikeId totals")
+      .lean(),
+    Bike.find({ "sale.mode": "cash", "sale.date": { $gte: from, $lt: to } }).select("sale.date sale.price purchase.price").lean(),
+    Payment.find({ status: "posted", kind: "discount", paidAt: { $gte: from, $lt: to } }).select("planId amount paidAt").lean(),
+    FinancialTransaction.aggregate([
+      { $match: { status: "posted", type: { $in: ["expense", "other_income"] }, occurredAt: { $gte: from, $lt: to } } },
+      { $group: { _id: { m: { $dateToString: { format: "%Y-%m", date: "$occurredAt" } }, t: "$type" }, s: { $sum: "$amount" } } },
+    ]),
+  ]);
+
+  const bikeIds = plans.filter((p) => p.relatedBikeId).map((p) => p.relatedBikeId);
+  const bikes = bikeIds.length ? await Bike.find({ _id: { $in: bikeIds } }).select("purchase.price").lean() : [];
+  const bikeCost = new Map(bikes.map((b) => [String(b._id), b.purchase?.price ?? null]));
+  const costOf = (p) => (p.relatedBikeId ? (bikeCost.get(String(p.relatedBikeId)) ?? null) : (p.itemCost ?? null));
+
+  // Discounts only count against plans whose cost is known (otherwise the plan is left out).
+  const discountPlanIds = [...new Set(discounts.map((d) => String(d.planId)))];
+  const discountPlans = discountPlanIds.length
+    ? await InstallmentPlan.find({ _id: { $in: discountPlanIds } }).select("itemCost relatedBikeId").lean()
+    : [];
+  const missingDiscBikes = discountPlans.filter((p) => p.relatedBikeId && !bikeCost.has(String(p.relatedBikeId))).map((p) => p.relatedBikeId);
+  if (missingDiscBikes.length) {
+    const more = await Bike.find({ _id: { $in: missingDiscBikes } }).select("purchase.price").lean();
+    for (const b of more) bikeCost.set(String(b._id), b.purchase?.price ?? null);
+  }
+  const costKnown = new Map(discountPlans.map((p) => [String(p._id), costOf(p) !== null]));
+
+  const out = {};
+  const at = (key) => (out[key] ??= emptyProfit());
+
+  for (const p of plans) {
+    const m = at(monthKeyOf(p.terms.agreementDate));
+    const cost = costOf(p);
+    if (cost === null) {
+      m.missingCount += 1;
+      m.missingSales += p.terms.agreedTotal;
+      continue;
+    }
+    m.sales += p.terms.agreedTotal;
+    m.cost += cost;
+    m.salesCount += 1;
+    // Profit still sitting in what the customer owes: profit × balance ÷ total price.
+    const profit = p.terms.agreedTotal - (p.totals?.discount ?? 0) - cost;
+    m.uncollected += profit > 0 ? shareOf(profit, p.totals?.balance ?? 0, p.terms.agreedTotal) : 0;
+  }
+  for (const b of cashBikes) {
+    const m = at(monthKeyOf(b.sale.date));
+    m.sales += b.sale.price ?? 0;
+    m.cost += b.purchase?.price ?? 0;
+    m.salesCount += 1;
+  }
+  for (const d of discounts) {
+    if (costKnown.get(String(d.planId))) at(monthKeyOf(d.paidAt)).discounts += d.amount;
+  }
+  for (const r of manual) {
+    const m = at(r._id.m);
+    if (r._id.t === "expense") m.expenses += r.s;
+    else m.otherIncome += r.s;
+  }
+  for (const m of Object.values(out)) {
+    m.gross = m.sales - m.cost - m.discounts;
+    m.net = m.gross + m.otherIncome - m.expenses;
+  }
+  return out;
+}
+
+/** Sum the monthly buckets that fall in [from, to). */
+function sumProfit(byMonth, from, to) {
+  const lo = monthKeyOf(from);
+  const hi = monthKeyOf(to);
+  const total = emptyProfit();
+  for (const [key, m] of Object.entries(byMonth)) {
+    if (key < lo || key >= hi) continue;
+    for (const k of Object.keys(total)) total[k] += m[k];
+  }
+  return total;
+}
+
 const AGING = [
   { key: "on_time", label: "On time", test: (d) => d === 0 },
   { key: "d1_30", label: "1–30 days late", test: (d) => d >= 1 && d <= 30 },
@@ -84,6 +184,12 @@ export async function getFinanceOverview(actor, period = "month") {
     Customer.countDocuments({ createdAt: { $gte: new Date(range.prevFrom.getTime() - 5 * 3600e3), $lt: new Date(range.prevTo.getTime() - 5 * 3600e3) } }),
     Bike.countDocuments({ status: "sold", "sale.date": { $gte: range.from, $lt: range.to } }),
   ]);
+
+  // Profit: one pass over every month needed (this period, the one before, the 12-month trend).
+  const profitFrom = new Date(Math.min(range.prevFrom.getTime(), trendFrom.getTime()));
+  const profitMonths = await profitByMonth(profitFrom, range.to);
+  const profit = sumProfit(profitMonths, range.from, range.to);
+  const prevProfit = sumProfit(profitMonths, range.prevFrom, range.prevTo);
 
   // Receivables and how late they are.
   const aging = AGING.map((b) => ({ key: b.key, label: b.label, count: 0, balance: 0, overdue: 0 }));
@@ -125,8 +231,10 @@ export async function getFinanceOverview(actor, period = "month") {
     month: key,
     label,
     cashIn: (mPayments[key] ?? 0) + (mCashSales[key] ?? 0) + manualBy(key, ["other_income", "owner_investment"]),
-    cashOut: (mSeller[key] ?? 0) + manualBy(key, ["expense", "owner_withdrawal"]),
+    cashOut: (mSeller[key] ?? 0) + manualBy(key, ["expense", "owner_withdrawal", "item_purchase"]),
     collections: mPayments[key] ?? 0,
+    grossProfit: profitMonths[key]?.gross ?? 0,
+    netProfit: profitMonths[key]?.net ?? 0,
     salesInstallment: mPlans[key] ?? 0,
     salesCash: mCashSales[key] ?? 0,
     bikesSold: mBikesSold[key] ?? 0,
@@ -154,6 +262,7 @@ export async function getFinanceOverview(actor, period = "month") {
     { key: "sellerPayments", label: "Bike purchases (paid to sellers)", value: current.parts.sellerPayments },
     ...expenseRows.map((r) => ({ key: `exp-${r._id}`, label: EXPENSE_CATEGORIES.find((c) => c.value === r._id)?.label ?? "Other", value: r.s })),
     { key: "ownerWithdrawal", label: "Owner withdrawal", value: current.parts.ownerWithdrawal },
+    { key: "itemPurchases", label: "Items bought for plans", value: current.parts.itemPurchases },
   ]
     .filter((x) => x.value > 0)
     .sort((a, b) => b.value - a.value);
@@ -180,6 +289,7 @@ export async function getFinanceOverview(actor, period = "month") {
       stockValue: stock[0]?.s ?? 0,
       stockCount: stock[0]?.n ?? 0,
     },
+    profit: { ...profit, previous: { gross: prevProfit.gross, net: prevProfit.net } },
     trend,
     moneyIn,
     moneyOut,

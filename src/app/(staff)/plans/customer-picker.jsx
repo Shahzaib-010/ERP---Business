@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { initials } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { cn } from "@/lib/utils";
-import { findCustomersAction } from "./actions";
+import { findCustomersAction, recentCustomersAction } from "./actions";
 
 /** Search-as-you-type customer chooser. Submits the chosen id as `name`. */
 export function CustomerPicker({ name = "customerId", initial, invalid, id = "customerId" }) {
@@ -17,8 +17,17 @@ export function CustomerPicker({ name = "customerId", initial, invalid, id = "cu
   const [selected, setSelected] = useState(initial ?? null);
   const [results, setResults] = useState([]);
   const [query, setQuery] = useState("");
+  const [recent, setRecent] = useState(null); // null = not loaded yet
   const [pending, startTransition] = useTransition();
   const timer = useRef();
+  const searching = query.trim().length >= 2;
+  const shown = searching ? results : (recent ?? []);
+
+  const onOpenChange = (next) => {
+    setOpen(next);
+    // Load the newest customers the first time the list opens.
+    if (next && recent === null) startTransition(async () => setRecent(await recentCustomersAction()));
+  };
 
   const onSearch = (value) => {
     setQuery(value);
@@ -47,7 +56,7 @@ export function CustomerPicker({ name = "customerId", initial, invalid, id = "cu
           </Button>
         </div>
       ) : (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={onOpenChange}>
           <PopoverTrigger asChild>
             <Button
               id={id}
@@ -66,12 +75,14 @@ export function CustomerPicker({ name = "customerId", initial, invalid, id = "cu
           </PopoverTrigger>
           <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
             <Command shouldFilter={false}>
-              <CommandInput placeholder="Type at least 2 letters…" value={query} onValueChange={onSearch} />
+              <CommandInput placeholder="Name, CNIC or phone…" value={query} onValueChange={onSearch} />
               <CommandList>
-                <CommandEmpty>{pending ? "Searching…" : query.trim().length < 2 ? "Start typing to search." : "No customer found."}</CommandEmpty>
-                {results.length > 0 && (
-                  <CommandGroup heading="Customers">
-                    {results.map((c) => (
+                <CommandEmpty>
+                  {pending ? (searching ? "Searching…" : "Loading…") : searching ? "No customer found." : "No customers yet."}
+                </CommandEmpty>
+                {shown.length > 0 && (
+                  <CommandGroup heading={searching ? "Customers" : "Newest customers"}>
+                    {shown.map((c) => (
                       <CommandItem
                         key={c.id}
                         value={c.id}

@@ -1,19 +1,19 @@
 import Link from "next/link";
-import { ArrowRightIcon, ArrowUpRightIcon } from "lucide-react";
+import { ArrowRightIcon, ArrowUpRightIcon, PhoneIcon, PlusIcon } from "lucide-react";
 import { BUSINESS } from "@/lib/business";
 import { SHOWROOM_MODELS } from "@/lib/showroom";
 import { BikeArt } from "./_landing/bike-art";
-import { PublicFooter, PublicHeader, tel } from "./_landing/public-chrome";
+import { PublicFooter, PublicHeader, mapsUrl, tel } from "./_landing/public-chrome";
 import { RideTimeline } from "./_landing/ride-timeline";
 
 export const metadata = {
   title: { absolute: `${BUSINESS.name} — Motorcycle showroom, Rahim Yar Khan` },
-  description: "Motorcycle showroom in the Auto Market, Rahim Yar Khan. See every model and colour.",
+  description: "New and used motorcycles in the Auto Market, Rahim Yar Khan. See every model and colour.",
 };
 
-const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(BUSINESS.address)}`;
 const allColours = SHOWROOM_MODELS.flatMap((m) => m.colors);
 const engineCc = SHOWROOM_MODELS.map((m) => ({ name: m.name, cc: parseInt(m.specs[0].value, 10) }));
+const specLabels = SHOWROOM_MODELS[0].specs.map((s) => s.label);
 
 const STATS = [
   { value: String(SHOWROOM_MODELS.length), unit: "", label: "Models" },
@@ -22,15 +22,70 @@ const STATS = [
   { value: "360", unit: "°", label: "3D view" },
 ];
 
-function Stat({ value, unit, label, dark }) {
+const OFFER = [
+  {
+    n: "01",
+    title: "New motorcycles",
+    text: "Every model in the line-up, in all of its colours. See the real paint and sit on the bike before you choose.",
+  },
+  {
+    n: "02",
+    title: "Used motorcycles",
+    text: "Pre-owned bikes for a smaller budget. What is in changes often, so call to ask what is available today.",
+  },
+  {
+    n: "03",
+    title: "Sell your motorcycle",
+    text: "We buy motorcycles too. Bring your bike and its registration papers to the showroom, or call first to talk it over.",
+  },
+];
+
+const FAQ = [
+  {
+    q: "Are the bikes on this website in the showroom?",
+    a: "The website shows the line-up. Stock and colours change, so call before you come to check what is in the showroom today.",
+  },
+  {
+    q: "Do you sell used motorcycles?",
+    a: "Yes, we sell both new and used motorcycles. Used stock changes often; call the owner to hear what is available.",
+  },
+  {
+    q: "Can I sell my motorcycle to you?",
+    a: "Yes. Bring the bike with its registration papers to the showroom, or call first and describe it.",
+  },
+  {
+    q: "How do I find out the price?",
+    a: "Prices follow the market, so we give them in person or on the phone. Call or visit and ask about the model you like.",
+  },
+  {
+    q: "I already bought from you. How do I see my account?",
+    a: (
+      <>
+        Use the{" "}
+        <Link href="/login/customer" className="font-medium text-foreground underline underline-offset-4">
+          customer login
+        </Link>{" "}
+        with your CNIC and the password the showroom gave you.
+      </>
+    ),
+  },
+];
+
+function Stat({ value, unit, label }) {
   return (
     <div className="text-center">
-      <p className={`font-condensed text-4xl font-semibold tabular-nums sm:text-5xl ${dark ? "text-white" : ""}`}>
+      <p className="font-condensed text-4xl font-semibold tabular-nums sm:text-5xl">
         {value}
         <sup className="ml-0.5 align-super text-sm font-normal text-muted-foreground">{unit}</sup>
       </p>
-      <p className={`mt-1 text-[0.7rem] tracking-[0.18em] uppercase ${dark ? "text-white/45" : "text-muted-foreground"}`}>{label}</p>
+      <p className="mt-1 text-[0.7rem] tracking-[0.18em] text-muted-foreground uppercase">{label}</p>
     </div>
+  );
+}
+
+function Eyebrow({ children, dark }) {
+  return (
+    <p className={`font-condensed text-sm font-semibold tracking-[0.2em] uppercase ${dark ? "text-brand" : "text-muted-foreground"}`}>{children}</p>
   );
 }
 
@@ -65,6 +120,140 @@ function Feature({ id, title, lead, text, art, figures, flip, children }) {
   );
 }
 
+/** Line-up: one column per model, specs lined up so they compare at a glance. */
+function Lineup() {
+  return (
+    <section id="lineup" className="scroll-mt-14 bg-background">
+      <div className="mx-auto w-full max-w-6xl px-5 py-20 sm:px-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Eyebrow>The line-up</Eyebrow>
+            <h2 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Compare the models</h2>
+          </div>
+          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+            From a light city commuter to a sporty highway bike. Pick one to see it in 3D.
+          </p>
+        </div>
+
+        <div className="mt-12 grid border-t md:grid-cols-3">
+          {SHOWROOM_MODELS.map((m, i) => (
+            <article
+              key={m.id}
+              className={`group flex flex-col border-b py-8 md:px-6 md:py-10 ${i > 0 ? "md:border-l" : "md:pl-0"} ${i === SHOWROOM_MODELS.length - 1 ? "md:pr-0" : ""}`}
+            >
+              <div className="flex items-baseline justify-between gap-4">
+                <h3 className="font-condensed text-3xl font-semibold tracking-wide uppercase">{m.name}</h3>
+                <span className="text-[0.7rem] tracking-[0.18em] text-muted-foreground uppercase">{m.style}</span>
+              </div>
+              <p className="mt-3 min-h-[2.75rem] text-sm leading-relaxed text-muted-foreground">{m.tagline}</p>
+
+              <dl className="mt-6 divide-y border-y text-sm">
+                {specLabels.map((label) => (
+                  <div key={label} className="flex items-center justify-between py-2.5">
+                    <dt className="text-muted-foreground">{label}</dt>
+                    <dd className="font-medium tabular-nums">{m.specs.find((s) => s.label === label)?.value ?? "—"}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              <div className="mt-6 flex items-center gap-1.5">
+                {m.colors.map((c) => (
+                  <span key={c.hex} title={c.name} className="size-4 rounded-full ring-1 ring-foreground/15" style={{ background: c.hex }} />
+                ))}
+                <span className="ml-2 text-xs text-muted-foreground">{m.colors.length} colours</span>
+              </div>
+
+              <Link
+                href={`/showroom?model=${m.id}`}
+                className="mt-8 inline-flex w-fit items-center gap-2 border-b border-foreground pb-1 text-sm font-medium"
+              >
+                View in 3D
+                <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </article>
+          ))}
+        </div>
+        <p className="mt-6 text-xs text-muted-foreground">Specifications are a guide. Ask at the showroom for the exact figures of each bike.</p>
+      </div>
+    </section>
+  );
+}
+
+/** What the showroom offers: new, used, and buying bikes from the public. */
+function Offer() {
+  return (
+    <section className="bg-[oklch(0.97_0.004_264)]">
+      <div className="mx-auto grid w-full max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_1.3fr]">
+        <div>
+          <Eyebrow>At the showroom</Eyebrow>
+          <h2 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">New, used, or selling yours</h2>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Whatever brings you to the Auto Market, you deal with us directly, face to face.
+          </p>
+        </div>
+        <ol className="divide-y border-y">
+          {OFFER.map((o) => (
+            <li key={o.n} className="grid grid-cols-[3rem_1fr] gap-4 py-7">
+              <span className="font-condensed text-sm font-semibold tracking-[0.2em] text-muted-foreground">{o.n}</span>
+              <div>
+                <h3 className="text-lg font-semibold">{o.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{o.text}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+function Faq() {
+  return (
+    <section id="faq" className="scroll-mt-14 bg-background">
+      <div className="mx-auto grid w-full max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_1.3fr]">
+        <div>
+          <Eyebrow>Questions</Eyebrow>
+          <h2 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Before you visit</h2>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Anything else? Call {BUSINESS.owner.name} on{" "}
+            <a href={tel(BUSINESS.owner.phone)} className="font-medium whitespace-nowrap text-foreground tabular-nums">
+              {BUSINESS.owner.phone}
+            </a>
+            .
+          </p>
+        </div>
+        <div className="divide-y border-y">
+          {FAQ.map((f) => (
+            <details key={f.q} className="group py-1 [&_summary::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-4 text-base font-medium">
+                {f.q}
+                <PlusIcon className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-45" />
+              </summary>
+              <p className="pb-5 pr-10 text-sm leading-relaxed text-muted-foreground">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function RowLink({ href, label, value, big, external }) {
+  return (
+    <a
+      href={href}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      className="group flex items-center justify-between gap-4 py-5"
+    >
+      <span>
+        <span className="block text-[0.7rem] tracking-[0.18em] text-muted-foreground uppercase">{label}</span>
+        <span className={`mt-1 block ${big ? "font-condensed text-3xl font-semibold tabular-nums" : "font-medium"}`}>{value}</span>
+      </span>
+      <ArrowUpRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
+    </a>
+  );
+}
+
 export default function Home() {
   return (
     <main className="flex min-h-svh flex-1 flex-col">
@@ -73,8 +262,9 @@ export default function Home() {
       {/* Hero: the bike, centred, with key figures underneath */}
       <section className="bg-[oklch(0.97_0.004_264)]">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-5 pt-16 pb-20 text-center sm:px-8 sm:pt-20">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">What makes {BUSINESS.name} special</h1>
-          <p className="mt-2 text-sm text-muted-foreground">New and used motorcycles in the Auto Market, Rahim Yar Khan.</p>
+          <Eyebrow>Auto Market · Rahim Yar Khan</Eyebrow>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">What makes {BUSINESS.name} special</h1>
+          <p className="mt-3 text-sm text-muted-foreground sm:text-base">New and used motorcycles, every model and colour in one showroom.</p>
 
           <BikeArt className="mt-10 w-full max-w-2xl animate-in fade-in-0 zoom-in-95 duration-700" />
 
@@ -84,12 +274,22 @@ export default function Home() {
             ))}
           </div>
 
-          <Link href="/showroom" className="group mt-12 inline-flex items-center gap-2 border-b border-foreground pb-1 text-sm font-medium">
-            Explore the showroom in 3D
-            <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-1" />
-          </Link>
+          <div className="mt-12 flex flex-col items-center gap-6 sm:flex-row sm:gap-10">
+            <Link href="/showroom" className="group inline-flex items-center gap-2 border-b border-foreground pb-1 text-sm font-medium">
+              Explore the showroom in 3D
+              <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+            <a href={tel(BUSINESS.owner.phone)} className="group inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+              <PhoneIcon className="size-4" />
+              <span>
+                Call the owner <span className="font-medium text-foreground tabular-nums">{BUSINESS.owner.phone}</span>
+              </span>
+            </a>
+          </div>
         </div>
       </section>
+
+      <Lineup />
 
       <Feature
         id="engine"
@@ -133,8 +333,10 @@ export default function Home() {
         </Link>
       </Feature>
 
+      <Offer />
+
       {/* Timeline */}
-      <section className="border-t border-white/10 bg-[oklch(0.13_0_0)] text-white">
+      <section className="bg-[oklch(0.13_0_0)] text-white">
         <div className="mx-auto w-full max-w-6xl px-5 pt-20 pb-24 sm:px-8">
           <h2 className="text-center font-condensed text-3xl font-light tracking-[0.12em] uppercase sm:text-5xl">Your ride, step by step</h2>
           <div className="mt-12">
@@ -143,8 +345,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Visit */}
-      <section id="visit" className="scroll-mt-14 bg-[oklch(0.97_0.004_264)]">
+      <Faq />
+
+      {/* Visit: owner contact first */}
+      <section id="visit" className="scroll-mt-14 border-t bg-[oklch(0.97_0.004_264)]">
         <div className="mx-auto grid w-full max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-2 lg:items-end">
           <div>
             <p lang="ur" dir="rtl" className="text-right text-3xl lg:text-left">
@@ -152,26 +356,18 @@ export default function Home() {
             </p>
             <h2 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">Visit the showroom</h2>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-              Every model and colour is waiting for you. Drop in, or call before you come.
+              Every model and colour is waiting for you. Drop in, or call the owner before you come.
             </p>
+            <a
+              href={tel(BUSINESS.owner.phone)}
+              className="mt-8 inline-flex h-11 items-center gap-2 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-opacity hover:opacity-90"
+            >
+              <PhoneIcon className="size-4" /> Call {BUSINESS.owner.name}
+            </a>
           </div>
           <div className="divide-y border-y text-sm">
-            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-between gap-4 py-5">
-              <span>
-                <span className="block text-[0.7rem] tracking-[0.18em] text-muted-foreground uppercase">Address</span>
-                <span className="mt-1 block font-medium">{BUSINESS.address}</span>
-              </span>
-              <ArrowUpRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
-            </a>
-            {BUSINESS.contacts.map((c) => (
-              <a key={c.phone} href={tel(c.phone)} className="group flex items-center justify-between gap-4 py-5">
-                <span>
-                  <span className="block text-[0.7rem] tracking-[0.18em] text-muted-foreground uppercase">{c.name}</span>
-                  <span className="mt-1 block font-condensed text-2xl font-semibold tabular-nums">{c.phone}</span>
-                </span>
-                <ArrowUpRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
-              </a>
-            ))}
+            <RowLink href={tel(BUSINESS.owner.phone)} label={`Owner · ${BUSINESS.owner.name}`} value={BUSINESS.owner.phone} big />
+            <RowLink href={mapsUrl} label="Address" value={BUSINESS.address} external />
           </div>
         </div>
       </section>

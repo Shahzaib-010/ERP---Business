@@ -9,6 +9,8 @@ import {
   CalendarIcon,
   FileTextIcon,
   HistoryIcon,
+  InfoIcon,
+  PiggyBankIcon,
   TrendingUpIcon,
   UserPlusIcon,
   UsersIcon,
@@ -18,7 +20,7 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { ActivityList } from "@/components/app/activity-list";
 import { ChartCard } from "@/components/app/charts/chart-card";
-import { AreaTrend, BreakdownBars, CashFlowChart, SalesChart } from "@/components/app/charts/finance-charts";
+import { AreaTrend, BreakdownBars, CashFlowChart, ColumnChart, SalesChart } from "@/components/app/charts/finance-charts";
 import { CountUp } from "@/components/app/count-up";
 import { Stagger, StaggerItem } from "@/components/app/motion";
 import { PageBody, PageHeader } from "@/components/app/page-header";
@@ -80,6 +82,92 @@ function BusinessCard({ icon: Icon, title, href, figures, note }) {
         {note && <p className="-mt-1 px-6 text-xs text-muted-foreground">{note}</p>}
       </Card>
     </Link>
+  );
+}
+
+/** One line of the profit statement: "− Cost of items sold  Rs 20,000". */
+function StatementRow({ sign, label, value, strong, sub }) {
+  return (
+    <div className={`flex items-baseline justify-between gap-3 py-2 ${strong ? "border-t font-semibold" : "text-sm"}`}>
+      <span className={strong ? "" : "text-muted-foreground"}>
+        <span className="inline-block w-4 text-muted-foreground">{sign}</span>
+        {label}
+        {sub && <span className="ml-1 text-xs font-normal text-muted-foreground">{sub}</span>}
+      </span>
+      <span className={`tabular-nums ${value < 0 ? "text-destructive" : ""}`}>{formatPKR(value)}</span>
+    </div>
+  );
+}
+
+function ProfitCard({ profit, trend, periodLabel }) {
+  const p = profit;
+  const collected = Math.max(0, p.gross - p.uncollected);
+  const table = {
+    columns: [
+      { key: "label", label: "Month" },
+      { key: "gross", label: "Gross profit", align: "right" },
+      { key: "net", label: "Net profit", align: "right" },
+    ],
+    rows: trend.map((t) => ({ key: t.month, label: t.label, gross: formatPKR(t.grossProfit), net: formatPKR(t.netProfit) })),
+  };
+  return (
+    <div className="grid gap-6 xl:grid-cols-3">
+      <Card className="gap-4">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <PiggyBankIcon className="size-4 text-muted-foreground" /> Profit
+          </CardTitle>
+          <CardDescription>{periodLabel}. What the business earned, not cash in hand.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className={`text-4xl font-semibold tracking-tight whitespace-nowrap tabular-nums ${p.net < 0 ? "text-destructive" : ""}`}>
+              <CountUp value={p.net} prefix="Rs " />
+            </p>
+            <DeltaChip value={p.net} previous={p.previous.net} />
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">Net profit, after expenses.</p>
+
+          <div className="mt-4">
+            <StatementRow sign="" label="Sales" sub={`(${formatNumber(p.salesCount)})`} value={p.sales} />
+            <StatementRow sign="−" label="Cost of items sold" value={p.cost} />
+            {p.discounts > 0 && <StatementRow sign="−" label="Settlement discounts" value={p.discounts} />}
+            <StatementRow sign="=" label="Gross profit" value={p.gross} strong />
+            <StatementRow sign="+" label="Other income" value={p.otherIncome} />
+            <StatementRow sign="−" label="Expenses" value={p.expenses} />
+            <StatementRow sign="=" label="Net profit" value={p.net} strong />
+          </div>
+
+          <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+            {p.uncollected > 0 && (
+              <p>
+                <span className="font-medium text-foreground tabular-nums">{formatPKR(collected)}</span> of the gross profit is collected;{" "}
+                <span className="font-medium text-foreground tabular-nums">{formatPKR(p.uncollected)}</span> is still in customer balances.
+              </p>
+            )}
+            {p.missingCount > 0 && (
+              <p className="flex gap-1.5 rounded-md bg-warning/12 px-2 py-1.5 text-foreground">
+                <InfoIcon className="mt-0.5 size-3.5 shrink-0 text-warning-foreground dark:text-warning" />
+                <span>
+                  {formatNumber(p.missingCount)} {p.missingCount === 1 ? "plan" : "plans"} ({formatPKR(p.missingSales)} in sales) {p.missingCount === 1 ? "has" : "have"} no item cost yet,
+                  so {p.missingCount === 1 ? "it is" : "they are"} left out. Add &quot;Cost to us&quot; on the plan to include {p.missingCount === 1 ? "it" : "them"}.
+                </span>
+              </p>
+            )}
+            <p>Owner investment and withdrawals are never counted as profit.</p>
+          </div>
+        </CardContent>
+      </Card>
+      <ChartCard className="xl:col-span-2" title="Profit by month" description="Last 12 months. Gross = sales − cost of items; net = gross + other income − expenses." table={table}>
+        <ColumnChart
+          data={trend}
+          series={[
+            { key: "grossProfit", label: "Gross profit", color: "var(--viz-1)" },
+            { key: "netProfit", label: "Net profit", color: "var(--viz-3)" },
+          ]}
+        />
+      </ChartCard>
+    </div>
   );
 }
 
@@ -169,16 +257,22 @@ async function DashboardContent({ searchParams }) {
               <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-brand shadow-[0_0_12px_var(--brand)]" />
               <div className="flex flex-1 flex-col gap-5 p-6">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Cash in hand</p>
+                  <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    Cash in hand
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-foreground">Today</span>
+                  </p>
                   <p className={`mt-1 text-4xl font-semibold tracking-tight whitespace-nowrap tabular-nums sm:text-5xl ${fin.position.cashInHand < 0 ? "text-destructive" : ""}`}>
                     <CountUp value={fin.position.cashInHand} prefix="Rs " />
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">Everything received minus everything paid, as recorded.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Everything received minus everything paid since the start, as recorded. It does not change with the period.
+                  </p>
                 </div>
-                <div className="grid grid-cols-3 gap-4 border-t pt-4 sm:gap-6">
+                <p className="-mb-2 border-t pt-4 text-xs font-medium text-muted-foreground">{fin.range.label}</p>
+                <div className="grid grid-cols-3 gap-4 sm:gap-6">
                   <Figure label="Received" value={fin.kpis.cashIn.value} previous={fin.kpis.cashIn.previous} />
                   <Figure label="Paid out" value={fin.kpis.cashOut.value} previous={fin.kpis.cashOut.previous} goodWhen={null} />
-                  <Figure label="Net" value={fin.kpis.net.value} previous={fin.kpis.net.previous} />
+                  <Figure label="Net change" value={fin.kpis.net.value} previous={fin.kpis.net.previous} />
                 </div>
               </div>
               <div className="border-t px-4 pt-4 pb-2">
@@ -242,6 +336,9 @@ async function DashboardContent({ searchParams }) {
               </CardContent>
             </Card>
           </div>
+
+          {/* Profit: earned, not cash (D-019) */}
+          <ProfitCard profit={fin.profit} trend={trend} periodLabel={fin.range.label} />
 
           {/* Key numbers with 12-month trends */}
           <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

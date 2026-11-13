@@ -36,14 +36,45 @@ export async function resolveSession(token) {
   if (!token || typeof token !== "string" || token.length > 200) return null;
   await connectDB();
 
-  const session = await Session.findOne({
-    tokenHash: hashSessionToken(token),
-    expiresAt: { $gt: new Date() },
-  }).lean();
+  // One round trip: the session plus its account (and, for customers, the login row).
+  // This runs on every request, so it is the main thing between a click and the page.
+  const [session] = await Session.aggregate([
+    { $match: { tokenHash: hashSessionToken(token), expiresAt: { $gt: new Date() } } },
+    { $limit: 1 },
+    {
+      $lookup: {
+        from: StaffUser.collection.name,
+        localField: "subjectId",
+        foreignField: "_id",
+        pipeline: [{ $project: { name: 1, username: 1, role: 1, permissions: 1, isActive: 1 } }],
+        as: "staff",
+      },
+    },
+    {
+      $lookup: {
+        from: Customer.collection.name,
+        localField: "subjectId",
+        foreignField: "_id",
+        pipeline: [{ $project: { name: 1, portalEnabled: 1 } }],
+        as: "customer",
+      },
+    },
+    {
+      $lookup: {
+        from: CustomerCredential.collection.name,
+        localField: "subjectId",
+        foreignField: "customerId",
+        pipeline: [{ $project: { isActive: 1 } }],
+        as: "credential",
+      },
+    },
+  ]);
   if (!session) return null;
 
   const actor =
-    session.kind === "staff" ? await loadStaffActor(session) : await loadCustomerActor(session);
+    session.kind === "staff"
+      ? staffActor(session, session.staff[0])
+      : customerActor(session, session.customer[0], session.credential[0]);
 
   if (!actor) {
     await Session.deleteOne({ _id: session._id });
@@ -52,8 +83,7 @@ export async function resolveSession(token) {
   return actor;
 }
 
-async function loadStaffActor(session) {
-  const user = await StaffUser.findById(session.subjectId).lean();
+function staffActor(session, user) {
   if (!user || !user.isActive) return null;
   return {
     kind: "staff",
@@ -67,11 +97,7 @@ async function loadStaffActor(session) {
   };
 }
 
-async function loadCustomerActor(session) {
-  const [customer, credential] = await Promise.all([
-    Customer.findById(session.subjectId).select("name portalEnabled").lean(),
-    CustomerCredential.findOne({ customerId: session.subjectId }).select("isActive").lean(),
-  ]);
+function customerActor(session, customer, credential) {
   if (!customer || !customer.portalEnabled || !credential?.isActive) return null;
   return {
     kind: "customer",

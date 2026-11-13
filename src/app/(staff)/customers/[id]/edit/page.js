@@ -41,7 +41,7 @@ async function EditCustomerContent({ params }) {
       <PageHeader icon={PencilIcon} title={`Edit ${customer.name}`} description="Changes are saved to the customer's history." />
       <CustomerForm
         action={updateCustomerAction.bind(null, customer.id)}
-        customer={{ ...customer, phones: customer.phones.map(formatPhone) }}
+        customer={{ ...customer, phones: customer.phones.map(formatPhone), whatsapp: formatPhone(customer.whatsapp) }}
         cancelHref={`/customers/${customer.id}`}
       />
     </PageBody>

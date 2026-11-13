@@ -4,6 +4,14 @@ import { formatCnic, maskCnic, normalizeCnic } from "@/lib/cnic";
 import { can, sanitizeGrantedPermissions } from "@/server/permissions";
 import { redact } from "@/server/services/audit";
 
+test("WhatsApp links use the international form for Pakistani numbers", async () => {
+  const { whatsappUrl } = await import("@/lib/phone");
+  assert.equal(whatsappUrl("03001234567"), "https://wa.me/923001234567");
+  assert.equal(whatsappUrl("923001234567"), "https://wa.me/923001234567");
+  assert.equal(whatsappUrl("00971501234567"), "https://wa.me/971501234567");
+  assert.equal(whatsappUrl(""), "");
+});
+
 const staff = (role, permissions = []) => ({ kind: "staff", id: "x", role, permissions, isActive: true });
 
 test("CNIC normalisation accepts dashes and spaces, rejects wrong lengths", () => {

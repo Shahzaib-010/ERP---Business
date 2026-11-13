@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { connectDB, withTransaction } from "@/server/db/mongoose";
 import { Bike } from "@/server/models/Bike";
 import { Customer } from "@/server/models/Customer";
+import { FinancialTransaction } from "@/server/models/FinancialTransaction";
 import { InstallmentPlan } from "@/server/models/InstallmentPlan";
 import { Payment } from "@/server/models/Payment";
 import { StaffUser } from "@/server/models/StaffUser";
@@ -154,10 +155,56 @@ function auditPlan(plan) {
     item: plan.item?.description,
     agreedTotal: plan.terms.agreedTotal,
     advanceAmount: plan.terms.advanceAmount ?? 0,
+    itemCost: plan.itemCost ?? null,
     schedule: scheduleOut(plan.schedule),
     guarantors: (plan.guarantors ?? []).map((g) => g.name),
     notes: plan.notes ?? null,
   };
+}
+
+/**
+ * D-019: what the item cost and the profit on this sale. Cost is the bike's purchase price
+ * for a bike from the register, otherwise the cost typed on the plan (null = not entered).
+ */
+function planProfit(plan, bike, costEntry) {
+  const fromBike = Boolean(plan.relatedBikeId);
+  const cost = fromBike ? (bike?.purchase?.price ?? null) : (plan.itemCost ?? null);
+  const discount = plan.totals?.discount ?? 0;
+  return {
+    cost,
+    costSource: fromBike ? "bike" : "plan",
+    discount,
+    profit: cost === null ? null : plan.terms.agreedTotal - discount - cost,
+    paidFromCash: costEntry ? { amount: costEntry.amount, date: costEntry.occurredAt } : null,
+  };
+}
+
+/** D-019: cash paid for a plan's item, as a cash book row linked to the plan. */
+async function recordItemPurchase(actor, plan, session) {
+  const [t] = await FinancialTransaction.create(
+    [
+      {
+        type: "item_purchase",
+        planId: plan._id,
+        amount: plan.itemCost,
+        occurredAt: plan.terms.agreementDate,
+        description: `Bought for plan #${plan.accountNumber}: ${plan.item.description}`.slice(0, 300),
+        createdBy: actor.id,
+      },
+    ],
+    { session },
+  );
+  await recordAudit(
+    {
+      actor,
+      action: "cashbook.create",
+      entityType: "financialTransaction",
+      entityId: t._id,
+      after: { type: t.type, amount: t.amount, date: t.occurredAt, description: t.description, accountNumber: plan.accountNumber },
+    },
+    session,
+  );
+  return t;
 }
 
 function guarantorDocs(list) {
@@ -224,6 +271,7 @@ export async function createPlan(actor, input) {
             guarantors: guarantorDocs(data.guarantors),
             notes: data.notes,
             relatedBikeId: bike?._id,
+            itemCost: bike ? undefined : data.itemCost,
             totals: { cashReceived: 0, discount: 0, balance: data.agreedTotal },
             createdBy: actor.id,
           },
@@ -273,6 +321,8 @@ export async function createPlan(actor, input) {
         );
       }
       await recomputePlan(plan, session);
+      // Paying for the item is part of setting up the sale, like the advance (D-019).
+      if (!bike && data.itemCostPaidFromCash && plan.itemCost) await recordItemPurchase(actor, plan, session);
 
       await recordAudit(
         { actor, action: "plan.create", entityType: "installmentPlan", entityId: plan._id, after: auditPlan(plan) },
@@ -373,10 +423,11 @@ export async function getPlan(actor, id) {
   requirePermission(actor, "installments.view");
   await connectDB();
   const plan = await loadPlan(id);
-  const [customer, payments, bike] = await Promise.all([
+  const [customer, payments, bike, costEntry] = await Promise.all([
     Customer.findById(plan.customerId).lean(),
     Payment.find({ planId: plan._id }).sort({ paidAt: 1, createdAt: 1 }).lean(),
-    plan.relatedBikeId ? Bike.findById(plan.relatedBikeId).select("bikeNumber make model modelYear color").lean() : null,
+    plan.relatedBikeId ? Bike.findById(plan.relatedBikeId).select("bikeNumber make model modelYear color purchase.price").lean() : null,
+    FinancialTransaction.findOne({ planId: plan._id, type: "item_purchase", status: "posted" }).select("amount occurredAt").lean(),
   ]);
   const staffIds = [...new Set(payments.flatMap((p) => [p.enteredBy, p.voidedBy]).filter(Boolean).map(String))];
   const staff = staffIds.length ? await StaffUser.find({ _id: { $in: staffIds } }).select("name").lean() : [];
@@ -433,6 +484,7 @@ export async function getPlan(actor, id) {
     bike: bike
       ? { id: String(bike._id), bikeNumber: bike.bikeNumber, label: [bike.make, bike.model, bike.modelYear, bike.color].filter(Boolean).join(" ") }
       : null,
+    profit: planProfit(plan, bike, costEntry),
     progress,
     ledger,
     completedAt: plan.completedAt ?? null,
@@ -599,9 +651,20 @@ export async function updatePlanDetails(actor, planId, input) {
       cnicNormalized: g.cnicNormalized ?? savedCnic.get(g.name.toLowerCase()),
     }));
     plan.notes = data.notes;
+    // A bike from the register takes its cost from the bike, so the field is ignored there.
+    if (!plan.relatedBikeId) plan.itemCost = data.itemCost;
     await plan.save({ session });
+    // "Paid from business cash" ticked later: record the cash out once (none posted yet).
+    let paymentRecorded = false;
+    if (!plan.relatedBikeId && data.itemCostPaidFromCash && plan.itemCost) {
+      const existing = await FinancialTransaction.exists({ planId: plan._id, type: "item_purchase", status: "posted" }).session(session);
+      if (!existing) {
+        await recordItemPurchase(actor, plan, session);
+        paymentRecorded = true;
+      }
+    }
     const after = auditPlan(plan);
-    if (JSON.stringify(before) === JSON.stringify(after)) return { changed: false };
+    if (JSON.stringify(before) === JSON.stringify(after)) return { changed: paymentRecorded };
     await recordAudit({ actor, action: "plan.update", entityType: "installmentPlan", entityId: plan._id, before, after }, session);
     return { changed: true };
   });

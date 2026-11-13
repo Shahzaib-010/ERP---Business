@@ -6,6 +6,8 @@ export const ENTRY_TYPES = {
   other_income: { label: "Other income", direction: "in" },
   owner_investment: { label: "Owner investment", direction: "in" },
   owner_withdrawal: { label: "Owner withdrawal", direction: "out" },
+  // Created from an installment plan only, never from the cash book form (D-019).
+  item_purchase: { label: "Item bought for a plan", direction: "out" },
 };
 
 export const EXPENSE_CATEGORIES = [
@@ -39,6 +41,7 @@ export const SOURCE_LABELS = {
   other_income: "Other income",
   owner_investment: "Owner investment",
   owner_withdrawal: "Owner withdrawal",
+  item_purchase: "Item bought for a plan",
 };
 
 export function categoryLabel(type, category) {

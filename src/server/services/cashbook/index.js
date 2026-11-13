@@ -140,7 +140,7 @@ export async function collectEntries({ from, to } = {}) {
       title: t.description,
       detail: t.party ?? "",
       reference: t.voucherNumber ? `Voucher ${t.voucherNumber}` : null,
-      href: null,
+      href: t.planId ? `/plans/${t.planId}` : null,
       receiptHref: `/receipts/cashbook/${t._id}`,
       createdAt: t.createdAt,
     });
@@ -164,7 +164,7 @@ export async function cashTotals({ from, to } = {}) {
   ]);
   const byType = Object.fromEntries(manual.map((r) => [r._id, r.s]));
   const cashIn = inPayments + inSales + (byType.other_income ?? 0) + (byType.owner_investment ?? 0);
-  const cashOut = outSeller + (byType.expense ?? 0) + (byType.owner_withdrawal ?? 0);
+  const cashOut = outSeller + (byType.expense ?? 0) + (byType.owner_withdrawal ?? 0) + (byType.item_purchase ?? 0);
   return {
     cashIn,
     cashOut,
@@ -177,6 +177,7 @@ export async function cashTotals({ from, to } = {}) {
       sellerPayments: outSeller,
       expenses: byType.expense ?? 0,
       ownerWithdrawal: byType.owner_withdrawal ?? 0,
+      itemPurchases: byType.item_purchase ?? 0,
     },
   };
 }

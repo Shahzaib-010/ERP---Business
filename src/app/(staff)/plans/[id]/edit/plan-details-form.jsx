@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { HashIcon, PackageIcon, SaveIcon, UserRoundCheckIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FormAlert } from "@/components/app/form-alert";
 import { TextField, TextareaField } from "@/components/app/form-fields";
 import { SubmitButton } from "@/components/submit-button";
-import { GuarantorFields, ItemFields } from "../../plan-fields";
+import { formatPKR } from "@/lib/format";
+import { GuarantorFields, ItemCostFields, ItemFields, formatMoneyInput } from "../../plan-fields";
 
 function Section({ icon: Icon, title, description, children }) {
   return (
@@ -24,15 +25,22 @@ function Section({ icon: Icon, title, description, children }) {
   );
 }
 
-export function PlanDetailsForm({ action, initial, cancelHref }) {
+export function PlanDetailsForm({ action, initial, cancelHref, cost }) {
   const [state, formAction] = useActionState(action, null);
   const values = state?.values ?? initial;
-  const errors = state?.fieldErrors ?? {};
   const key = state?.values ? JSON.stringify(state.values) : "initial";
+  // Remount after a failed submit so every field (including the controlled cost) shows what was sent.
+  return <PlanDetailsFormInner key={key} formAction={formAction} state={state} values={values} initial={initial} cancelHref={cancelHref} cost={cost} />;
+}
+
+function PlanDetailsFormInner({ formAction, state, values, initial, cancelHref, cost }) {
+  const errors = state?.fieldErrors ?? {};
   const maskedNote = initial.guarantors.some((g) => g.cnicMasked);
+  const [itemCost, setItemCost] = useState(formatMoneyInput(values.itemCost));
+  const [costPaid, setCostPaid] = useState(values.itemCostPaidFromCash === "on");
 
   return (
-    <form key={key} action={formAction} className="flex flex-col gap-6" noValidate>
+    <form action={formAction} className="flex flex-col gap-6" noValidate>
       <FormAlert>{state && !state.ok ? state.error : null}</FormAlert>
       <Section icon={HashIcon} title="Account">
         <div className="max-w-xs">
@@ -48,6 +56,22 @@ export function PlanDetailsForm({ action, initial, cancelHref }) {
       </Section>
       <Section icon={PackageIcon} title="Item">
         <ItemFields values={values} errors={errors} />
+        {cost.fromBike ? (
+          <p className="mt-5 border-t pt-5 text-sm text-muted-foreground">
+            This plan sells a bike from the register, so profit uses the bike&apos;s purchase price
+            {cost.bikeCost != null ? ` (${formatPKR(cost.bikeCost)})` : ""} as its cost.
+          </p>
+        ) : (
+          <ItemCostFields
+            total={cost.agreedTotal}
+            value={itemCost}
+            onChange={setItemCost}
+            paid={costPaid}
+            onPaidChange={setCostPaid}
+            error={errors.itemCost}
+            alreadyPaid={cost.paidAmount}
+          />
+        )}
       </Section>
       <Section
         icon={UserRoundCheckIcon}

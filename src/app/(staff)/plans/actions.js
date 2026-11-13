@@ -5,7 +5,7 @@ import { refresh } from "next/cache";
 import { formToNestedObject, formToObject, runAction } from "@/server/actions";
 import { getStaffActor } from "@/server/auth/current";
 import { can } from "@/server/permissions";
-import { searchCustomers } from "@/server/services/customers";
+import { recentCustomers, searchCustomers } from "@/server/services/customers";
 import {
   applyDiscount,
   createPlan,
@@ -57,6 +57,17 @@ export async function voidPaymentAction(paymentId, _prev, formData) {
   const result = await runAction(async () => voidPayment(await getStaffActor(), paymentId, input));
   if (result.ok) refresh();
   return result;
+}
+
+/** The 4 newest customers, shown in the customer picker before anything is typed. */
+export async function recentCustomersAction() {
+  const actor = await getStaffActor();
+  if (!actor || !can(actor, "customers.view")) return [];
+  try {
+    return await recentCustomers(actor, { limit: 4 });
+  } catch {
+    return [];
+  }
 }
 
 /** Customer search for the plan form's customer picker. */

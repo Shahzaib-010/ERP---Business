@@ -42,6 +42,7 @@ async function EditPlanContent({ params }) {
     itemDescription: plan.item.description,
     itemModel: plan.item.model,
     itemSerial: plan.item.serialNumber,
+    itemCost: plan.profit.costSource === "plan" ? (plan.profit.cost ?? "") : "",
     notes: plan.notes,
     guarantors: plan.guarantors.map((g) => ({
       name: g.name,
@@ -60,9 +61,14 @@ async function EditPlanContent({ params }) {
       <PageHeader
         icon={PencilIcon}
         title={`Edit plan #${plan.accountNumber}`}
-        description="Item, guarantors and notes. Prices and payments cannot be changed here; the schedule is changed from the plan page."
+        description="Item, cost, guarantors and notes. Prices and payments cannot be changed here; the schedule is changed from the plan page."
       />
-      <PlanDetailsForm action={updatePlanDetailsAction.bind(null, plan.id)} initial={initial} cancelHref={`/plans/${plan.id}`} />
+      <PlanDetailsForm
+        action={updatePlanDetailsAction.bind(null, plan.id)}
+        initial={initial}
+        cancelHref={`/plans/${plan.id}`}
+        cost={{ fromBike: plan.profit.costSource === "bike", bikeCost: plan.profit.cost, agreedTotal: plan.terms.agreedTotal, paidAmount: plan.profit.paidFromCash?.amount ?? null }}
+      />
     </PageBody>
   );
 }

@@ -66,6 +66,36 @@ export async function listEntityHistory(actor, { entityType, entityId, limit = 5
 }
 
 /** Latest operational events across the business, for the dashboard. */
+/**
+ * Operational events in [from, to) (real timestamps), oldest first, with names and labels.
+ * `actions` limits the action types; `excludeActorId` hides one person's own actions.
+ * Used by the notification bell and the daily report.
+ */
+export async function listActivityBetween(actor, { from, to, actions, excludeActorId, limit = 500, newestFirst = false } = {}) {
+  requirePermission(actor, "audit.view");
+  await connectDB();
+  const filter = { scope: "operational", $nor: [{ entityType: "customer", action: "plan.create" }] };
+  if (from || to) filter.createdAt = { ...(from && { $gte: from }), ...(to && { $lt: to }) };
+  if (actions) filter.action = { $in: actions };
+  if (excludeActorId && mongoose.isValidObjectId(excludeActorId)) filter.actorId = { $ne: new mongoose.Types.ObjectId(excludeActorId) };
+  const order = newestFirst ? -1 : 1;
+  const rows = await AuditLog.find(filter).sort({ createdAt: order, _id: order }).limit(limit).lean();
+  return withActorNames(rows);
+}
+
+/** How many activity entries each staff member made in [from, to), counting all of them (no limit). */
+export async function countActivityByActor(actor, { from, to } = {}) {
+  requirePermission(actor, "audit.view");
+  await connectDB();
+  const filter = { scope: "operational", $nor: [{ entityType: "customer", action: "plan.create" }] };
+  if (from || to) filter.createdAt = { ...(from && { $gte: from }), ...(to && { $lt: to }) };
+  const rows = await AuditLog.aggregate([{ $match: filter }, { $group: { _id: "$actorId", count: { $sum: 1 } } }]);
+  const ids = rows.map((r) => r._id).filter(Boolean);
+  const staff = ids.length ? await StaffUser.find({ _id: { $in: ids } }).select("name").lean() : [];
+  const names = new Map(staff.map((s) => [String(s._id), s.name]));
+  return rows.map((r) => ({ name: names.get(String(r._id)) ?? "Unknown", count: r.count })).sort((a, b) => b.count - a.count);
+}
+
 export async function listRecentActivity(actor, { limit = 8 } = {}) {
   requirePermission(actor, "audit.view");
   await connectDB();

@@ -1,6 +1,7 @@
 import {
   BikeIcon,
   BookOpenIcon,
+  ClipboardListIcon,
   FileTextIcon,
   LayoutDashboardIcon,
   SearchIcon,
@@ -33,7 +34,10 @@ export const NAV_GROUPS = [
   },
   {
     label: "Money",
-    items: [{ href: "/cashbook", label: "Cash book", icon: BookOpenIcon, permission: "transactions.view" }],
+    items: [
+      { href: "/cashbook", label: "Cash book", icon: BookOpenIcon, permission: "transactions.view" },
+      { href: "/reports/daily", label: "Daily report", icon: ClipboardListIcon, permission: "transactions.view" },
+    ],
   },
   {
     label: "Administration",
@@ -50,6 +54,9 @@ export const SEGMENT_LABELS = {
   plans: "Installment plans",
   bikes: "Bikes",
   cashbook: "Cash book",
+  reports: "Reports",
+  daily: "Daily report",
+  import: "Import",
   installments: "Installments",
   showroom: "Showroom",
   users: "Staff accounts",

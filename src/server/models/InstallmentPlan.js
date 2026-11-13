@@ -44,6 +44,9 @@ const planSchema = new mongoose.Schema(
       serialNumber: { type: String, trim: true, maxlength: 100 }, // registration / engine / IMEI
     },
     relatedBikeId: { type: mongoose.Schema.Types.ObjectId, ref: "Bike" }, // Phase 3
+    // What the business paid for the item (D-019), for profit. Not used when the plan sells
+    // a bike from the register: that cost is the bike's purchase price.
+    itemCost: money,
 
     terms: {
       agreementDate: { type: Date, required: true },

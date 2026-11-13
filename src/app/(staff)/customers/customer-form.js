@@ -85,6 +85,33 @@ export function CustomerForm({ action, customer, cancelHref }) {
           ))}
         </div>
         {phoneError && <FieldError className="mt-3">{phoneError}</FieldError>}
+        <div className="mt-5 grid gap-5 border-t pt-5 sm:grid-cols-3">
+          <div className="flex flex-col gap-2">
+            <TextField
+              id="whatsapp"
+              name="whatsapp"
+              label="WhatsApp number"
+              inputMode="tel"
+              placeholder="0300-1234567"
+              defaultValue={values.whatsapp ?? ""}
+              error={errors.whatsapp}
+              hint="Leave empty if they don't use WhatsApp."
+              inputClassName="font-mono"
+              onChange={(e) => (e.target.value = formatPhoneInput(e.target.value))}
+            />
+            <button
+              type="button"
+              className="w-fit text-xs font-medium text-primary hover:underline"
+              onClick={() => {
+                const mobile = document.getElementById("phone-0")?.value ?? "";
+                const wa = document.getElementById("whatsapp");
+                if (wa && mobile) wa.value = mobile;
+              }}
+            >
+              Same as mobile
+            </button>
+          </div>
+        </div>
       </Section>
 
       <Section icon={MapPinIcon} title="Addresses and notes">

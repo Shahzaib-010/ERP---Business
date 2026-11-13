@@ -24,32 +24,21 @@ export default function NewPlanPage({ searchParams }) {
 async function NewPlanContent({ searchParams }) {
   const actor = await requireStaffPage("installments.create");
   const { customerId, bikeId } = await searchParams;
-  const nextNumbers = await getNextNumbers(actor);
+  // The three lookups are independent, so they run together.
+  const [nextNumbers, c, foundBike] = await Promise.all([
+    getNextNumbers(actor),
+    // Coming from a customer's profile: start with that customer selected.
+    typeof customerId === "string" && can(actor, "customers.view") ? getCustomer(actor, customerId).catch(() => null) : null,
+    // Coming from a bike's page: sell that bike on installments.
+    typeof bikeId === "string" && can(actor, "bikes.view") ? getBikeForSale(actor, bikeId).catch(() => null) : null,
+  ]);
+  const initialCustomer = c ? { id: c.id, name: c.name, cnicMasked: c.cnicMasked, phones: c.phones } : null;
 
-  // Coming from a customer's profile: start with that customer selected.
-  let initialCustomer = null;
-  if (typeof customerId === "string" && can(actor, "customers.view")) {
-    try {
-      const c = await getCustomer(actor, customerId);
-      initialCustomer = { id: c.id, name: c.name, cnicMasked: c.cnicMasked, phones: c.phones };
-    } catch {
-      initialCustomer = null;
-    }
-  }
-
-  // Coming from a bike's page: sell that bike on installments.
-  let bike = null;
+  let bike = foundBike;
   let bikeProblem = null;
-  if (typeof bikeId === "string" && can(actor, "bikes.view")) {
-    try {
-      bike = await getBikeForSale(actor, bikeId);
-      if (bike.status !== "in_stock") {
-        bikeProblem = `B-${bike.bikeNumber} has already been sold.`;
-        bike = null;
-      }
-    } catch {
-      bike = null;
-    }
+  if (bike && bike.status !== "in_stock") {
+    bikeProblem = `B-${bike.bikeNumber} has already been sold.`;
+    bike = null;
   }
 
   return (

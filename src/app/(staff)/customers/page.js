@@ -5,6 +5,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   EyeIcon,
+  FileSpreadsheetIcon,
   MoreHorizontalIcon,
   PencilIcon,
   SearchIcon,
@@ -70,11 +71,18 @@ async function CustomersContent({ searchParams }) {
         description="Everyone who has bought from the showroom or taken an installment plan."
         actions={
           canCreate && (
-            <Button asChild>
-              <Link href="/customers/new">
-                <UserPlusIcon /> Add customer
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" asChild>
+                <Link href="/customers/import">
+                  <FileSpreadsheetIcon /> Import
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link href="/customers/new">
+                  <UserPlusIcon /> Add customer
+                </Link>
+              </Button>
+            </div>
           )
         }
       />

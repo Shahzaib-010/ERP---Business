@@ -42,7 +42,8 @@ import { PlanProgress, PlanStatusBadge } from "@/components/app/plan-ui";
 import { formatBusinessDate } from "@/lib/business-date";
 import { NotFoundError } from "@/server/errors";
 import { formatDate, formatDateTime, formatPKR, initials } from "@/lib/format";
-import { formatPhone } from "@/lib/phone";
+import { formatPhone, whatsappUrl } from "@/lib/phone";
+import { WhatsAppIcon } from "@/components/app/whatsapp-icon";
 import { disablePortalAction, setPortalPasswordAction } from "../actions";
 import { PortalAccess } from "./portal-access";
 
@@ -144,6 +145,13 @@ async function CustomerContent({ params }) {
                 </a>
               </Button>
             )}
+            {c.whatsapp && (
+              <Button variant="outline" asChild>
+                <a href={whatsappUrl(c.whatsapp)} target="_blank" rel="noopener noreferrer">
+                  <WhatsAppIcon className="text-[#25D366]" /> WhatsApp
+                </a>
+              </Button>
+            )}
             {canSeePlans && canCreatePlan && (
               <Button variant="outline" asChild>
                 <Link href={`/plans/new?customerId=${c.id}`}>
@@ -225,6 +233,20 @@ async function CustomerContent({ params }) {
               <CardTitle className="text-base">Contact</CardTitle>
             </CardHeader>
             <CardContent>
+              {c.whatsapp && (
+                <a
+                  href={whatsappUrl(c.whatsapp)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-[#25D366]/30 bg-[#25D366]/5 px-3 py-2 transition-colors hover:bg-[#25D366]/10"
+                >
+                  <span className="flex items-center gap-2 font-mono text-sm">
+                    <WhatsAppIcon className="size-3.5 text-[#25D366]" />
+                    {formatPhone(c.whatsapp)}
+                  </span>
+                  <span className="text-xs font-medium text-[#128C7E] dark:text-[#25D366]">Chat on WhatsApp</span>
+                </a>
+              )}
               {c.phones.length ? (
                 <ul className="space-y-2">
                   {c.phones.map((p, i) => (
@@ -238,7 +260,7 @@ async function CustomerContent({ params }) {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No phone number recorded.</p>
+                !c.whatsapp && <p className="text-sm text-muted-foreground">No phone number recorded.</p>
               )}
             </CardContent>
           </Card>

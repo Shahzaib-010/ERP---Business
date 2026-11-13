@@ -15,6 +15,8 @@ import { Kbd } from "@/components/ui/kbd";
 import { PageBody, PageHeader } from "@/components/app/page-header";
 import { PageSkeleton } from "@/components/app/skeletons";
 import { requireStaffPage } from "@/server/auth/current";
+import { can } from "@/server/permissions";
+import { recentCustomers } from "@/server/services/customers";
 import { universalSearch } from "@/server/services/search";
 import { initials } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
@@ -23,6 +25,29 @@ export const metadata = { title: "Search" };
 
 const GROUP_ICONS = { customers: UsersIcon, plans: FileTextIcon, bikes: BikeIcon };
 const RESULT_LIMIT = 20;
+
+function CustomerRow({ c }) {
+  return (
+    <li>
+      <Link href={`/customers/${c.id}`} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50">
+        <Avatar className="size-9">
+          <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">{initials(c.name)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium group-hover:text-primary">
+            {c.name}
+            {c.fatherOrHusbandName && <span className="font-normal text-muted-foreground"> · {c.fatherOrHusbandName}</span>}
+          </p>
+          <p className="truncate font-mono text-xs text-muted-foreground">
+            {c.cnicMasked}
+            {c.phones[0] && ` · ${formatPhone(c.phones[0])}`}
+          </p>
+        </div>
+        <ArrowRightIcon className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+      </Link>
+    </li>
+  );
+}
 
 export default function SearchPage({ searchParams }) {
   return (
@@ -37,6 +62,7 @@ async function SearchContent({ searchParams }) {
   const sp = await searchParams;
   const { q, groups, searchable } = await universalSearch(actor, typeof sp.q === "string" ? sp.q : "");
   const found = groups.reduce((n, g) => n + g.items.length, 0);
+  const newest = !q && can(actor, "customers.view") ? await recentCustomers(actor, { limit: 4 }) : [];
 
   return (
     <PageBody className="mx-auto w-full max-w-4xl">
@@ -61,7 +87,27 @@ async function SearchContent({ searchParams }) {
         </Button>
       </Form>
 
-      {!q && (
+      {!q && newest.length > 0 && (
+        <Card className="gap-0 py-0">
+          <CardHeader className="flex flex-row items-center justify-between border-b py-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <UsersIcon className="size-4 text-primary" /> Newest customers
+            </CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/customers">
+                All customers <ArrowRightIcon />
+              </Link>
+            </Button>
+          </CardHeader>
+          <ul className="divide-y">
+            {newest.map((c) => (
+              <CustomerRow key={c.id} c={c} />
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {!q && newest.length === 0 && (
         <Card>
           <CardContent>
             <Empty className="py-10">
@@ -146,27 +192,7 @@ async function SearchContent({ searchParams }) {
                       </Link>
                     </li>
                   ))}
-                {g.type === "customers" &&
-                  g.items.map((c) => (
-                    <li key={c.id}>
-                      <Link href={`/customers/${c.id}`} className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50">
-                        <Avatar className="size-9">
-                          <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">{initials(c.name)}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium group-hover:text-primary">
-                            {c.name}
-                            {c.fatherOrHusbandName && <span className="font-normal text-muted-foreground"> · {c.fatherOrHusbandName}</span>}
-                          </p>
-                          <p className="truncate font-mono text-xs text-muted-foreground">
-                            {c.cnicMasked}
-                            {c.phones[0] && ` · ${formatPhone(c.phones[0])}`}
-                          </p>
-                        </div>
-                        <ArrowRightIcon className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                      </Link>
-                    </li>
-                  ))}
+                {g.type === "customers" && g.items.map((c) => <CustomerRow key={c.id} c={c} />)}
               </ul>
             </Card>
           );

@@ -42,6 +42,7 @@ export const AUDIT_FIELD_LABELS = {
   designation: "Designation",
   cnicMasked: "CNIC",
   phones: "Phones",
+  whatsapp: "WhatsApp",
   homeAddress: "Home address",
   collectionAddress: "Collection address",
   businessAddress: "Business address",

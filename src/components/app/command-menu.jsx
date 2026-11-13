@@ -42,7 +42,6 @@ import {
 } from "@/components/ui/command";
 import { Kbd } from "@/components/ui/kbd";
 import { Spinner } from "@/components/ui/spinner";
-import { quickSearchAction } from "@/app/(staff)/search/actions";
 import { logoutAction } from "@/app/auth-actions";
 import { formatPhone } from "@/lib/phone";
 import { cn } from "@/lib/utils";
@@ -89,6 +88,7 @@ export function CommandMenu({ allowed, can = {} }) {
   const [pending, startTransition] = useTransition();
   const [loggingOut, startLogout] = useTransition();
   const timer = useRef();
+  const searchAbort = useRef(null);
   const allowedSet = new Set(allowed);
   const has = (href) => allowedSet.has(href);
   const pages = [...NAV_GROUPS.flatMap((g) => g.items), ACCOUNT_ITEM].filter((i) => i === ACCOUNT_ITEM || has(i.href));
@@ -99,6 +99,7 @@ export function CommandMenu({ allowed, can = {} }) {
     if (next) setRecent(readRecent());
     else {
       clearTimeout(timer.current);
+      searchAbort.current?.abort();
       setQuery("");
       setGroups([]);
     }
@@ -126,11 +127,20 @@ export function CommandMenu({ allowed, can = {} }) {
       return;
     }
     timer.current = setTimeout(() => {
+      // Plain fetch, not a Server Action, so opening a result never waits behind a search.
+      // A newer search cancels the one still running.
+      searchAbort.current?.abort();
+      const ctrl = (searchAbort.current = new AbortController());
       startTransition(async () => {
-        const res = await quickSearchAction(value);
-        setGroups(res.groups);
+        try {
+          const r = await fetch(`/api/search?q=${encodeURIComponent(value)}`, { signal: ctrl.signal, cache: "no-store" });
+          const res = await r.json();
+          if (!ctrl.signal.aborted) setGroups(res.groups ?? []);
+        } catch {
+          // aborted or offline: keep the current results
+        }
       });
-    }, 250);
+    }, 200);
   };
 
   const go = (href) => {
@@ -158,6 +168,7 @@ export function CommandMenu({ allowed, can = {} }) {
     has("/bikes") && { href: "/bikes?status=sold", label: "Sold bikes", hint: "Bikes", icon: CircleCheckIcon, tone: "money", keywords: ["sales"] },
     has("/cashbook") && { href: "/cashbook", label: "Cash book this month", hint: "Money", icon: CalendarDaysIcon, tone: "money", keywords: ["cash", "ledger", "today", "transactions"] },
     has("/cashbook") && { href: "/cashbook?direction=out", label: "Money out this month", hint: "Money", icon: WalletIcon, tone: "out", keywords: ["expenses", "spending", "paid"] },
+    has("/reports/daily") && { href: "/reports/daily", label: "Today's report", hint: "Report", icon: CalendarDaysIcon, tone: "insight", keywords: ["daily", "report", "day book", "closing", "print", "excel", "pdf"] },
   ].filter(Boolean);
 
   const dashboards = [
@@ -177,10 +188,11 @@ export function CommandMenu({ allowed, can = {} }) {
       <Button
         variant="outline"
         onClick={() => changeOpen(true)}
-        className="h-8 w-full justify-start gap-2 bg-background px-2.5 font-normal text-muted-foreground shadow-none sm:w-56 lg:w-72"
+        aria-label="Search and quick menu"
+        className="h-8 w-8 justify-center gap-2 bg-background px-0 font-normal text-muted-foreground shadow-none sm:w-56 sm:justify-start sm:px-2.5 lg:w-72"
       >
         <SearchIcon className="size-4" />
-        <span className="truncate">Search…</span>
+        <span className="hidden truncate sm:inline">Search…</span>
         <Kbd className="ml-auto hidden sm:inline-flex">Ctrl K</Kbd>
       </Button>
 
@@ -308,6 +320,12 @@ export function CommandMenu({ allowed, can = {} }) {
                   <Item keywords={["client", "buyer"]} onSelect={() => go("/customers/new")}>
                     <Tile icon={UserPlusIcon} tone="primary" />
                     Add customer
+                  </Item>
+                )}
+                {can.createCustomer && (
+                  <Item keywords={["import", "excel", "csv", "upload", "bulk", "spreadsheet", "word"]} onSelect={() => go("/customers/import")}>
+                    <Tile icon={UserPlusIcon} tone="primary" />
+                    Import customers from Excel / CSV
                   </Item>
                 )}
                 {can.createBike && (

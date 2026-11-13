@@ -13,7 +13,7 @@ import { FREQUENCY_LABELS, buildRows, suggestFirstDueDate } from "@/lib/installm
 import { dateOnlyString, formatBusinessDate, parseDateOnly, todayPk } from "@/lib/business-date";
 import { formatPKR } from "@/lib/format";
 import { CustomerPicker } from "./customer-picker";
-import { GuarantorFields, ItemFields, MoneyField, SelectField, TextareaField, formatMoneyInput, moneyValue } from "./plan-fields";
+import { GuarantorFields, ItemCostFields, ItemFields, MoneyField, SelectField, TextareaField, formatMoneyInput, moneyValue } from "./plan-fields";
 
 function Section({ icon: Icon, title, description, children }) {
   return (
@@ -57,6 +57,8 @@ function PlanFormInner({ formAction, state, values, initialCustomer, nextNumbers
   const [cashPrice, setCashPrice] = useState(formatMoneyInput(values.cashPrice));
   const [agreedTotal, setAgreedTotal] = useState(formatMoneyInput(values.agreedTotal));
   const [advance, setAdvance] = useState(formatMoneyInput(values.advanceAmount));
+  const [itemCost, setItemCost] = useState(formatMoneyInput(values.itemCost));
+  const [costPaid, setCostPaid] = useState(values.itemCostPaidFromCash === "on");
   const [frequency, setFrequency] = useState(s0.frequency ?? "monthly");
   const [dueDay, setDueDay] = useState(s0.dueDayOfMonth ?? "10");
   const [intervalDays, setIntervalDays] = useState(s0.intervalDays ?? "15");
@@ -189,6 +191,21 @@ function PlanFormInner({ formAction, state, values, initialCustomer, nextNumbers
             inputClassName="font-mono"
           />
         </div>
+        {bike ? (
+          <p className="mt-5 text-sm text-muted-foreground">
+            Profit uses this bike&apos;s purchase price from the register as its cost.
+            {bike.purchasePrice ? ` Cost ${formatPKR(bike.purchasePrice)}${total ? `, profit ${formatPKR(total - bike.purchasePrice)}` : ""}.` : ""}
+          </p>
+        ) : (
+          <ItemCostFields
+            total={total}
+            value={itemCost}
+            onChange={setItemCost}
+            paid={costPaid}
+            onPaidChange={setCostPaid}
+            error={errors.itemCost}
+          />
+        )}
       </Section>
 
       <Section icon={CalendarClockIcon} title="Payment schedule" description="Payments of any amount are accepted on any date; this sets what is expected and when.">

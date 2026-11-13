@@ -46,6 +46,11 @@ export const customerSchema = z.object({
       return digits;
     }),
   phones: phonesSchema,
+  whatsapp: z
+    .string()
+    .optional()
+    .transform((s) => normalizePhone(s ?? "") || undefined)
+    .pipe(z.string().regex(/^\d{7,15}$/, "A WhatsApp number has 7–15 digits.").optional()),
   homeAddress: optionalText(300),
   collectionAddress: optionalText(300),
   businessAddress: optionalText(300),

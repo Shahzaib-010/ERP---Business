@@ -20,6 +20,7 @@ const EDITABLE_FIELDS = [
   "profession",
   "designation",
   "phones",
+  "whatsapp",
   "homeAddress",
   "collectionAddress",
   "businessAddress",
@@ -55,6 +56,7 @@ export function customerSearchFilter(raw) {
       $or: variants.flatMap((d) => [
         { cnicNormalized: { $regex: escapeRegex(d) } },
         { phones: { $regex: escapeRegex(d) } },
+        { whatsapp: { $regex: escapeRegex(d) } },
       ]),
     };
   }
@@ -76,6 +78,7 @@ export function toListItem(c) {
     fatherOrHusbandName: c.fatherOrHusbandName ?? "",
     cnicMasked: maskCnic(c.cnicNormalized),
     phones: c.phones ?? [],
+    whatsapp: c.whatsapp ?? "",
     collectionAddress: c.collectionAddress ?? "",
     portalEnabled: Boolean(c.portalEnabled),
     createdAt: c.createdAt ?? null,
@@ -124,6 +127,15 @@ export async function listCustomers(actor, input = {}) {
     .lean();
 
   return { items: rows.map(toListItem), total, page: current, pageCount, q };
+}
+
+/** The newest customers, newest first: shown in pickers before anything is typed. */
+export async function recentCustomers(actor, { limit = 4 } = {}) {
+  requirePermission(actor, "customers.view");
+  await connectDB();
+  const n = Math.min(Math.max(Number(limit) || 4, 1), 10);
+  const rows = await Customer.find().sort({ createdAt: -1, _id: -1 }).limit(n).lean();
+  return rows.map(toListItem);
 }
 
 /** Quick lookup for the universal search box. */

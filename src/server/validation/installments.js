@@ -69,6 +69,12 @@ const optionalText = (max) =>
     .optional()
     .transform((s) => (s ? s : undefined));
 
+// HTML checkbox: "on" (or "true") when ticked, missing when not.
+const checkbox = z
+  .union([z.string(), z.boolean()])
+  .optional()
+  .transform((v) => v === true || v === "on" || v === "true");
+
 const guarantorSchema = z.object({
   name: z.string().trim().max(100).optional().default(""),
   fatherName: optionalText(100),
@@ -156,11 +162,17 @@ export const createPlanSchema = z
     agreedTotal: rupees("total price", { required: true, min: 1 }),
     advanceAmount: rupees("advance").transform((v) => v ?? 0),
     advanceReceiptNumber: optionalInt(1, 9_999_999, "A whole number above 0."),
+    // D-019: what the business paid for the item, and whether that came out of business cash.
+    itemCost: rupees("cost"),
+    itemCostPaidFromCash: checkbox,
     schedule: scheduleSchema,
     guarantors: z.array(guarantorSchema).max(10).default([]),
     notes: optionalText(2000),
   })
   .superRefine((v, ctx) => {
+    if (!v.relatedBikeId && v.itemCostPaidFromCash && !v.itemCost) {
+      ctx.addIssue({ code: "custom", path: ["itemCost"], message: "Enter what you paid for the item." });
+    }
     if (v.cashPrice !== undefined && v.cashPrice > v.agreedTotal) {
       ctx.addIssue({ code: "custom", path: ["cashPrice"], message: "The cash price cannot be more than the total price." });
     }
@@ -178,17 +190,31 @@ export const createPlanSchema = z
       if (!g.name && filled) ctx.addIssue({ code: "custom", path: ["guarantors", i, "name"], message: "Enter the guarantor's name." });
     });
   })
-  .transform((v) => ({ ...v, guarantors: v.guarantors.filter((g) => g.name) }));
+  .transform((v) => ({
+    ...v,
+    guarantors: v.guarantors.filter((g) => g.name),
+    // A bike from the register already has its cost (the purchase price).
+    itemCost: v.relatedBikeId ? undefined : v.itemCost,
+    itemCostPaidFromCash: v.relatedBikeId ? false : v.itemCostPaidFromCash,
+  }));
 
-export const updatePlanDetailsSchema = z.object({
-  previousAccountNumber: optionalInt(1, 9_999_999, "A whole number above 0."),
-  itemKind: z.enum(["bike", "mobile", "appliance", "other"], { error: "Choose the type of item." }),
-  itemDescription: z.string().trim().min(2, "Describe the item.").max(200),
-  itemModel: optionalText(100),
-  itemSerial: optionalText(100),
-  guarantors: z.array(guarantorSchema).max(10).default([]),
-  notes: optionalText(2000),
-});
+export const updatePlanDetailsSchema = z
+  .object({
+    previousAccountNumber: optionalInt(1, 9_999_999, "A whole number above 0."),
+    itemKind: z.enum(["bike", "mobile", "appliance", "other"], { error: "Choose the type of item." }),
+    itemDescription: z.string().trim().min(2, "Describe the item.").max(200),
+    itemModel: optionalText(100),
+    itemSerial: optionalText(100),
+    itemCost: rupees("cost"),
+    itemCostPaidFromCash: checkbox,
+    guarantors: z.array(guarantorSchema).max(10).default([]),
+    notes: optionalText(2000),
+  })
+  .superRefine((v, ctx) => {
+    if (v.itemCostPaidFromCash && !v.itemCost) {
+      ctx.addIssue({ code: "custom", path: ["itemCost"], message: "Enter what you paid for the item." });
+    }
+  });
 
 export const paymentSchema = z.object({
   amount: rupees("amount", { required: true, min: 1 }),

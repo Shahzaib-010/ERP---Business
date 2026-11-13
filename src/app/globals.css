@@ -181,6 +181,130 @@
   }
 }
 
+/* ---------- Toasts (sonner, see components/ui/sonner.jsx) ----------
+   Each type sets five colours; the default (plain toast()) is neutral. */
+.app-toast {
+  --t-bg: color-mix(in oklch, var(--popover) 92%, transparent);
+  --t-border: var(--border);
+  --t-fg: var(--foreground);
+  --t-muted: var(--muted-foreground);
+  --t-glow: oklch(0 0 0 / 0.18);
+  background: var(--t-bg);
+  border-color: var(--t-border);
+  color: var(--t-fg);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.5) inset,
+    0 12px 28px -14px var(--t-glow);
+}
+.app-toast[data-type="success"] {
+  --t-bg: oklch(0.955 0.04 160 / 0.94);
+  --t-border: oklch(0.86 0.08 160);
+  --t-fg: oklch(0.45 0.11 160);
+  --t-muted: oklch(0.55 0.08 160);
+  --t-glow: oklch(0.65 0.14 160 / 0.45);
+}
+.app-toast[data-type="warning"] {
+  --t-bg: oklch(0.965 0.045 85 / 0.94);
+  --t-border: oklch(0.88 0.09 85);
+  --t-fg: oklch(0.5 0.1 70);
+  --t-muted: oklch(0.6 0.08 75);
+  --t-glow: oklch(0.75 0.14 80 / 0.45);
+}
+.app-toast[data-type="info"] {
+  --t-bg: oklch(0.95 0.035 260 / 0.94);
+  --t-border: oklch(0.85 0.07 260);
+  --t-fg: oklch(0.47 0.14 262);
+  --t-muted: oklch(0.57 0.1 262);
+  --t-glow: oklch(0.6 0.15 262 / 0.45);
+}
+.app-toast[data-type="error"] {
+  --t-bg: oklch(0.95 0.035 22 / 0.94);
+  --t-border: oklch(0.85 0.08 22);
+  --t-fg: oklch(0.5 0.17 25);
+  --t-muted: oklch(0.6 0.12 25);
+  --t-glow: oklch(0.62 0.18 25 / 0.45);
+}
+.dark .app-toast {
+  box-shadow: 0 14px 30px -14px var(--t-glow);
+}
+.dark .app-toast[data-type="success"] {
+  --t-bg: oklch(0.27 0.045 160 / 0.94);
+  --t-border: oklch(0.4 0.07 160);
+  --t-fg: oklch(0.85 0.12 160);
+  --t-muted: oklch(0.75 0.07 160);
+  --t-glow: oklch(0.5 0.12 160 / 0.5);
+}
+.dark .app-toast[data-type="warning"] {
+  --t-bg: oklch(0.28 0.045 80 / 0.94);
+  --t-border: oklch(0.42 0.07 80);
+  --t-fg: oklch(0.88 0.12 85);
+  --t-muted: oklch(0.77 0.07 85);
+  --t-glow: oklch(0.55 0.12 80 / 0.5);
+}
+.dark .app-toast[data-type="info"] {
+  --t-bg: oklch(0.27 0.05 262 / 0.94);
+  --t-border: oklch(0.4 0.08 262);
+  --t-fg: oklch(0.84 0.1 262);
+  --t-muted: oklch(0.74 0.06 262);
+  --t-glow: oklch(0.5 0.14 262 / 0.5);
+}
+.dark .app-toast[data-type="error"] {
+  --t-bg: oklch(0.27 0.05 25 / 0.94);
+  --t-border: oklch(0.42 0.09 25);
+  --t-fg: oklch(0.84 0.11 25);
+  --t-muted: oklch(0.74 0.07 25);
+  --t-glow: oklch(0.5 0.16 25 / 0.5);
+}
+.app-toast-icon,
+.app-toast-title,
+.app-toast-close {
+  color: var(--t-fg);
+}
+.app-toast-desc {
+  color: var(--t-muted);
+}
+/* Beats sonner's dark-theme close-button colours. */
+[data-sonner-toast].app-toast [data-close-button].app-toast-close {
+  background: transparent;
+  border: 0;
+  color: var(--t-fg);
+}
+[data-sonner-toast].app-toast [data-close-button].app-toast-close:hover {
+  background: color-mix(in oklch, var(--t-fg) 12%, transparent);
+}
+.app-toast-action {
+  background: var(--t-fg);
+  color: var(--t-bg);
+}
+
+/* Motion: slide + scale + un-blur in with a soft spring; quick fade-up out.
+   Sonner unmounts 200 ms after removal starts, so the exit must finish by then. */
+[data-sonner-toast].app-toast {
+  transition:
+    transform 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 380ms ease-out,
+    filter 380ms ease-out,
+    height 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms;
+}
+[data-sonner-toast].app-toast[data-mounted="false"] {
+  --y: translateY(-110%) scale(0.92);
+  filter: blur(6px);
+}
+[data-sonner-toast].app-toast[data-mounted="true"] {
+  filter: blur(0);
+}
+[data-sonner-toast].app-toast[data-removed="true"][data-swipe-out="false"] {
+  filter: blur(4px);
+  transition:
+    transform 200ms cubic-bezier(0.4, 0, 1, 1),
+    opacity 180ms ease-in,
+    filter 200ms ease-in;
+}
+[data-sonner-toast].app-toast[data-removed="true"][data-front="true"][data-swipe-out="false"] {
+  --y: translateY(-40%) scale(0.95);
+}
+
 /* Horizontal scrollers (tab rows, filter pills) without a visible scrollbar. */
 @utility no-scrollbar {
   scrollbar-width: none;

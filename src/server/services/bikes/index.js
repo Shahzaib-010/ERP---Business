@@ -455,6 +455,7 @@ export async function getBikeForSale(actor, id) {
     modelYear: b.modelYear ?? null,
     serial: b.registrationNumber || b.engineNumber || b.chassisNumber || "",
     description: `${b.make} ${b.model}${b.color ? `, ${b.color}` : ""}, ${b.condition}`,
+    purchasePrice: b.purchase?.price ?? null, // the cost for profit (D-019)
   };
 }
 

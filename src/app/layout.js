@@ -45,7 +45,7 @@ export default function RootLayout({ children }) {
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <TooltipProvider delayDuration={200}>
             {children}
-            <Toaster richColors closeButton position="top-right" />
+            <Toaster closeButton />
           </TooltipProvider>
         </ThemeProvider>
       </body>
